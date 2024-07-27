@@ -43,3 +43,13 @@ jobs:
 
     - name: Apply Terraform
       run: terraform apply -auto-approve
+
+
+#########################
+#Перейдите в ваш репозиторий на GitHub.
+#Перейдите в раздел "Settings" (Настройки).
+#В меню слева выберите "Secrets and variables" (Секреты и переменные).
+#Нажмите "Actions secrets" (Секреты действий).
+#Нажмите "New repository secret" (Новый секрет репозитория).
+#Введите имя секрета, например SSH_PRIVATE_KEY, и значение (ваш приватный ключ).
+#Нажмите "Add secret" (Добавить секрет).
