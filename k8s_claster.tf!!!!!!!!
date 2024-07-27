@@ -22,3 +22,24 @@ resource "null_resource" "run_kubespray" {
     local_file.hosts_yaml
   ]
 }
+
+resource "null_resource" "configure_kubeconfig" {
+  provisioner "remote-exec" {
+    inline = [
+      "mkdir ~/.kube",
+      "sudo cp /etc/kubernetes/admin.conf ~/.kube/config",
+      "sudo chown $(id -u):$(id -g) ~/.kube/config"
+    ]
+
+    connection {
+      type        = "ssh"
+      user        = "your_username"  # Замените на вашего пользователя
+      host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
+      private_key = file("~/.ssh/id_rsa")  # Замените на путь к вашему приватному ключу
+    }
+  }
+
+  depends_on = [
+    null_resource.run_kubespray
+  ]
+}
