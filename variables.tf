@@ -14,3 +14,8 @@ variable "yc_zone" {
 variable "yc_service_account_id" {
   description = "Идентификатор сервисного аккаунта"
 }
+
+variable "ssh_public_key" {
+  description = "SSH public key for accessing the instances"
+  type        = string
+}
