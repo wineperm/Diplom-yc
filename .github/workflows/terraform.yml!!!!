@@ -24,32 +24,25 @@ jobs:
       with:
         terraform_version: 1.9.0
 
+    - name: Set up SSH key
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
+      run: |
+        mkdir -p ~/.ssh
+        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        echo "$SSH_PUBLIC_KEY" > ~/.ssh/id_rsa.pub
+        chmod 600 ~/.ssh/id_rsa.pub
+
     - name: Terraform fmt
       run: terraform fmt -check=true
 
     - name: Terraform validate
       run: terraform validate
 
-    - name: Set up SSH key
-      env:
-        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-      run: |
-        mkdir -p ~/.ssh
-        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-
     - name: Initialize Terraform
       run: terraform init
 
     - name: Apply Terraform
       run: terraform apply -auto-approve
-
-
-#########################
-#Перейдите в ваш репозиторий на GitHub.
-#Перейдите в раздел "Settings" (Настройки).
-#В меню слева выберите "Secrets and variables" (Секреты и переменные).
-#Нажмите "Actions secrets" (Секреты действий).
-#Нажмите "New repository secret" (Новый секрет репозитория).
-#Введите имя секрета, например SSH_PRIVATE_KEY, и значение (ваш приватный ключ).
-#Нажмите "Add secret" (Добавить секрет).
