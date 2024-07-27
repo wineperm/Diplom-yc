@@ -11,7 +11,7 @@ resource "yandex_compute_instance" "k8s-master" {
   }
   boot_disk {
     initialize_params {
-      image_id = "fd80mrhj8fl2oe87o4e1"
+      image_id = "fd8k2vlv3b3duv812ama"
       type     = "network-hdd"
       size     = 10
     }
@@ -38,7 +38,7 @@ resource "yandex_compute_instance" "k8s-worker" {
   }
   boot_disk {
     initialize_params {
-      image_id = "fd80mrhj8fl2oe87o4e1"
+      image_id = "fd8k2vlv3b3duv812ama"
       type     = "network-hdd"
       size     = 10
     }
