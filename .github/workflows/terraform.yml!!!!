@@ -24,7 +24,7 @@ jobs:
       with:
         terraform_version: 1.0.0
 
-    - name: Set up SSH key
+    - name: Set up SSH keys
       env:
         SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
@@ -34,13 +34,6 @@ jobs:
         chmod 600 ~/.ssh/id_rsa
         echo "$SSH_PUBLIC_KEY" > ~/.ssh/id_rsa.pub
         chmod 600 ~/.ssh/id_rsa.pub
-
-    - name: Set up service account key file
-      env:
-        SERVICE_ACCOUNT_KEY_FILE: ${{ secrets.SERVICE_ACCOUNT_KEY_FILE }}
-      run: |
-        echo "$SERVICE_ACCOUNT_KEY_FILE" > ~/.ssh/authorized_key.json
-        chmod 600 ~/.ssh/authorized_key.json
 
     - name: Terraform fmt
       run: terraform fmt -check=true
@@ -52,10 +45,12 @@ jobs:
       env:
         TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
         TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
       run: terraform init
 
     - name: Apply Terraform
       env:
         TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
         TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
       run: terraform apply -auto-approve
