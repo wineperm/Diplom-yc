@@ -13,3 +13,7 @@ provider "yandex" {
   zone      = var.yc_zone
   service_account_key_file = file("~/.ssh/authorized_key.json")
 }
+
+provider "local" {}
+
+provider "null" {}
