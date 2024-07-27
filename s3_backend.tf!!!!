@@ -1,0 +1,12 @@
+terraform {
+  backend "s3" {
+    bucket = "terraform-state-bucket"
+    key    = "terraform.tfstate"
+    region = "ru-central1"
+    access_key = "<YOUR_ACCESS_KEY>"
+    secret_key = "<YOUR_SECRET_KEY>"
+    endpoint = "storage.yandexcloud.net"
+    skip_credentials_validation = true
+    skip_metadata_api_check     = true
+  }
+}
