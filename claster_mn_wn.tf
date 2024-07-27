@@ -23,6 +23,9 @@ resource "yandex_compute_instance" "k8s-master" {
   scheduling_policy {
     preemptible = true
   }
+  metadata = {
+    ssh-keys = "ubuntu:${var.ssh_public_key}"
+  }
 }
 
 // Создание виртуальных машин для воркер-узлов
@@ -49,5 +52,8 @@ resource "yandex_compute_instance" "k8s-worker" {
   }
   scheduling_policy {
     preemptible = true
+  }
+  metadata = {
+    ssh-keys = "ubuntu:${var.ssh_public_key}"
   }
 }
