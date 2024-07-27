@@ -22,7 +22,7 @@ jobs:
     - name: Set up Terraform
       uses: hashicorp/setup-terraform@v1
       with:
-        terraform_version: 1.9.0
+        terraform_version: 1.0.0
 
     - name: Set up SSH key
       env:
@@ -35,6 +35,13 @@ jobs:
         echo "$SSH_PUBLIC_KEY" > ~/.ssh/id_rsa.pub
         chmod 600 ~/.ssh/id_rsa.pub
 
+    - name: Set up service account key file
+      env:
+        SERVICE_ACCOUNT_KEY_FILE: ${{ secrets.SERVICE_ACCOUNT_KEY_FILE }}
+      run: |
+        echo "$SERVICE_ACCOUNT_KEY_FILE" > ~/.ssh/authorized_key.json
+        chmod 600 ~/.ssh/authorized_key.json
+
     - name: Terraform fmt
       run: terraform fmt -check=true
 
@@ -42,7 +49,13 @@ jobs:
       run: terraform validate
 
     - name: Initialize Terraform
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
       run: terraform init
 
     - name: Apply Terraform
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
       run: terraform apply -auto-approve
