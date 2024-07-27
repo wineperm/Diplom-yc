@@ -94,7 +94,7 @@ resource "null_resource" "configure_kubeconfig" {
 
     connection {
       type        = "ssh"
-      user        = "your_username"  # Замените на вашего пользователя
+      user        = "ubuntu"  # Замените на вашего пользователя
       host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
       private_key = file("~/.ssh/id_rsa")  # Замените на путь к вашему приватному ключу
     }
