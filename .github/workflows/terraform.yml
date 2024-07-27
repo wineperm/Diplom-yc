@@ -1,9 +1,9 @@
 name: Terraform
 
 on:
-  push:
-    branches:
-      - main
+  # push:
+  #   branches:
+  #     - main
   workflow_dispatch:
     inputs:
       environment:
@@ -22,7 +22,13 @@ jobs:
     - name: Set up Terraform
       uses: hashicorp/setup-terraform@v1
       with:
-        terraform_version: 1.0.0
+        terraform_version: 1.9.0
+
+    - name: Terraform fmt
+      run: terraform fmt -check=true
+
+    - name: Terraform validate
+      run: terraform validate
 
     - name: Set up SSH key
       env:
