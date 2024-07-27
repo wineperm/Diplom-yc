@@ -1,12 +1,15 @@
-variable "yc_cloud_id" {
-  description = "Идентификатор облака Yandex"
+terraform {
+  required_providers {
+    yandex = {
+      source = "yandex-cloud/yandex"
+    }
+  }
+  required_version = ">=0.13"
 }
 
-variable "yc_folder_id" {
-  description = "Идентификатор папки Yandex"
-}
-
-variable "yc_zone" {
-  description = "Зона Yandex Cloud"
-  default     = "ru-central1-a"
+provider "yandex" {
+  cloud_id  = var.yc_cloud_id
+  folder_id = var.yc_folder_id
+  zone      = var.yc_zone
+  service_account_key_file = file("~/.ssh/authorized_key.json")
 }
