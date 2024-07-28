@@ -34,7 +34,8 @@ jobs:
         chmod 600 ~/.ssh/id_rsa
         echo "$SSH_PUBLIC_KEY" > ~/.ssh/id_rsa.pub
         chmod 600 ~/.ssh/id_rsa.pub
-
+        echo "$SERVICE_ACCOUNT_KEY_FILE" > ~/.ssh/authorized_key.json
+        chmod 600 ~/.ssh/authorized_key.json
  #   - name: Terraform fmt
  #     run: terraform fmt -check=true
 
@@ -47,7 +48,8 @@ jobs:
         TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
         TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
         TF_VAR_yc_token: ${{ secrets.YC_TOKEN }}
-        TF_VAR_service_account_key_file: ${{ secrets.SERVICE_ACCOUNT_KEY_FILE }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+#        TF_VAR_service_account_key_file: ${{ secrets.SERVICE_ACCOUNT_KEY_FILE }}
       run: terraform init
 
     - name: Apply Terraform
@@ -56,5 +58,6 @@ jobs:
         TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
         TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
         TF_VAR_yc_token: ${{ secrets.YC_TOKEN }}
-        TF_VAR_service_account_key_file: ${{ secrets.SERVICE_ACCOUNT_KEY_FILE }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+#        TF_VAR_service_account_key_file: ${{ secrets.SERVICE_ACCOUNT_KEY_FILE }}
       run: terraform apply -auto-approve
