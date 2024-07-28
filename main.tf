@@ -96,6 +96,25 @@ resource "null_resource" "run_kubespray" {
   ]
 }
 
+resource "null_resource" "check_kubeconfig" {
+  provisioner "remote-exec" {
+    inline = [
+      "if [ -f /etc/kubernetes/admin.conf ]; then echo 'File exists'; else echo 'File does not exist'; fi"
+    ]
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"  # Замените на вашего пользователя
+      host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
+      private_key = file("~/.ssh/id_rsa")  # Замените на путь к вашему приватному ключу
+    }
+  }
+
+  depends_on = [
+    null_resource.run_kubespray
+  ]
+}
+
 resource "null_resource" "configure_kubeconfig" {
   provisioner "remote-exec" {
     inline = [
@@ -116,6 +135,6 @@ resource "null_resource" "configure_kubeconfig" {
   }
 
   depends_on = [
-    null_resource.run_kubespray
+    null_resource.check_kubeconfig
   ]
 }
