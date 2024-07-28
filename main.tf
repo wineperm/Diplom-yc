@@ -1,6 +1,6 @@
 // Создание виртуальных машин для мастер-узлов
 resource "yandex_compute_instance" "k8s-master" {
-  count       = 3
+  count       = 1
   name        = "k8s-master-${count.index}"
   platform_id = "standard-v2"
   zone        = element(["ru-central1-a", "ru-central1-b", "ru-central1-d"], count.index)
@@ -31,7 +31,7 @@ resource "yandex_compute_instance" "k8s-master" {
 
 // Создание виртуальных машин для воркер-узлов
 resource "yandex_compute_instance" "k8s-worker" {
-  count       = 3
+  count       = 1
   name        = "k8s-worker-${count.index}"
   platform_id = "standard-v2"
   zone        = element(["ru-central1-a", "ru-central1-b", "ru-central1-d"], count.index % 3)
@@ -68,6 +68,16 @@ resource "local_file" "hosts_yaml" {
   filename = "${path.module}/inventory/mycluster/hosts.yaml"
 }
 
+resource "null_resource" "check_inventory" {
+  provisioner "local-exec" {
+    command = "cat ${path.module}/inventory/mycluster/hosts.yaml"
+  }
+
+  depends_on = [
+    local_file.hosts_yaml
+  ]
+}
+
 resource "null_resource" "run_kubespray" {
   provisioner "local-exec" {
     command = <<EOT
@@ -81,7 +91,8 @@ resource "null_resource" "run_kubespray" {
   depends_on = [
     yandex_compute_instance.k8s-master,
     yandex_compute_instance.k8s-worker,
-    local_file.hosts_yaml
+    local_file.hosts_yaml,
+    null_resource.check_inventory
   ]
 }
 
