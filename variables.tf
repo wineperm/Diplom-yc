@@ -11,9 +11,9 @@ variable "yc_zone" {
   default     = "ru-central1-a"
 }
 
-#variable "yc_service_account_id" {
-#  description = "Идентификатор сервисного аккаунта"
-#}
+variable "yc_service_account_id" {
+  description = "Идентификатор сервисного аккаунта"
+}
 
 variable "ssh_public_key" {
   description = "SSH public key for accessing the instances"
