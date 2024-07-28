@@ -63,3 +63,14 @@ jobs:
         rm -f ~/.ssh/id_ed25519
         rm -f ~/.ssh/id_ed25519.pub
         rm -f ~/.ssh/authorized_key.json
+
+    - name: Install necessary packages
+      run: |
+        sudo apt update -y
+        sudo apt install python3.12-venv -y
+        python3 -m venv venv
+        source venv/bin/activate
+        git clone https://github.com/kubernetes-sigs/kubespray
+        cd kubespray/
+        pip3 install -r requirements.txt
+        pip3 install ruamel.yaml
