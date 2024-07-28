@@ -1,3 +1,65 @@
+// Создание виртуальных машин для мастер-узлов
+resource "yandex_compute_instance" "k8s-master" {
+  count       = 1
+  name        = "k8s-master-${count.index}"
+  platform_id = "standard-v2"
+  zone        = element(["ru-central1-a", "ru-central1-b", "ru-central1-d"], count.index)
+  resources {
+    cores         = 2
+    memory        = 4
+    core_fraction = 5
+  }
+  boot_disk {
+    initialize_params {
+      image_id = "fd8k2vlv3b3duv812ama"
+      type     = "network-hdd"
+      size     = 10
+    }
+  }
+  network_interface {
+    subnet_id = element([yandex_vpc_subnet.master-subnet-a.id, yandex_vpc_subnet.master-subnet-b.id, yandex_vpc_subnet.master-subnet-d.id], count.index)
+    nat       = true
+  }
+  scheduling_policy {
+    preemptible = true
+  }
+  metadata = {
+    ssh-keys = "ubuntu:${var.ssh_public_key}"
+  }
+  service_account_id = var.yc_service_account_id
+}
+
+// Создание виртуальных машин для воркер-узлов
+resource "yandex_compute_instance" "k8s-worker" {
+  count       = 1
+  name        = "k8s-worker-${count.index}"
+  platform_id = "standard-v2"
+  zone        = element(["ru-central1-a", "ru-central1-b", "ru-central1-d"], count.index % 3)
+  resources {
+    cores         = 2
+    memory        = 4
+    core_fraction = 5
+  }
+  boot_disk {
+    initialize_params {
+      image_id = "fd8k2vlv3b3duv812ama"
+      type     = "network-hdd"
+      size     = 10
+    }
+  }
+  network_interface {
+    subnet_id = element([yandex_vpc_subnet.worker-subnet-a.id, yandex_vpc_subnet.worker-subnet-b.id, yandex_vpc_subnet.worker-subnet-d.id], count.index % 3)
+    nat       = true
+  }
+  scheduling_policy {
+    preemptible = true
+  }
+  metadata = {
+    ssh-keys = "ubuntu:${var.ssh_public_key}"
+  }
+  service_account_id = var.yc_service_account_id
+}
+
 resource "local_file" "hosts_yaml" {
   content = templatefile("${path.module}/templates/hosts.yaml.tpl", {
     masters = yandex_compute_instance.k8s-master
@@ -6,24 +68,14 @@ resource "local_file" "hosts_yaml" {
   filename = "${path.module}/inventory/mycluster/hosts.yaml"
 }
 
-resource "time_sleep" "wait_60_seconds_after_hosts_yaml" {
-  create_duration = "60s"
-  depends_on = [local_file.hosts_yaml]
-}
-
 resource "null_resource" "check_inventory" {
   provisioner "local-exec" {
     command = "cat ${path.module}/inventory/mycluster/hosts.yaml"
   }
 
   depends_on = [
-    time_sleep.wait_60_seconds_after_hosts_yaml
+    local_file.hosts_yaml
   ]
-}
-
-resource "time_sleep" "wait_60_seconds_after_check_inventory" {
-  create_duration = "60s"
-  depends_on = [null_resource.check_inventory]
 }
 
 resource "null_resource" "run_kubespray" {
@@ -39,13 +91,9 @@ resource "null_resource" "run_kubespray" {
   depends_on = [
     yandex_compute_instance.k8s-master,
     yandex_compute_instance.k8s-worker,
-    time_sleep.wait_60_seconds_after_check_inventory
+    local_file.hosts_yaml,
+    null_resource.check_inventory
   ]
-}
-
-resource "time_sleep" "wait_60_seconds_after_run_kubespray" {
-  create_duration = "60s"
-  depends_on = [null_resource.run_kubespray]
 }
 
 resource "null_resource" "check_kubeconfig" {
@@ -58,18 +106,13 @@ resource "null_resource" "check_kubeconfig" {
       type        = "ssh"
       user        = "ubuntu"  # Замените на вашего пользователя
       host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
-      private_key = file("~/.ssh/id_rsa")  # Замените на путь к вашему приватному ключу
+      private_key = file("~/.ssh/id_ed25519")  # Замените на путь к вашему приватному ключу
     }
   }
 
   depends_on = [
-    time_sleep.wait_60_seconds_after_run_kubespray
+    null_resource.run_kubespray
   ]
-}
-
-resource "time_sleep" "wait_60_seconds_after_check_kubeconfig" {
-  create_duration = "60s"
-  depends_on = [null_resource.check_kubeconfig]
 }
 
 resource "null_resource" "configure_kubeconfig" {
@@ -87,11 +130,11 @@ resource "null_resource" "configure_kubeconfig" {
       type        = "ssh"
       user        = "ubuntu"  # Замените на вашего пользователя
       host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
-      private_key = file("~/.ssh/id_rsa")  # Замените на путь к вашему приватному ключу
+      private_key = file("~/.ssh/id_ed25519")  # Замените на путь к вашему приватному ключу
     }
   }
 
   depends_on = [
-    time_sleep.wait_60_seconds_after_check_kubeconfig
+    null_resource.check_kubeconfig
   ]
 }
