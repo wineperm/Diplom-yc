@@ -38,7 +38,7 @@ jobs:
         TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
         YC_ACCESS_KEY: ${{ secrets.YC_ACCESS_KEY }}
         YC_SECRET_KEY: ${{ secrets.YC_SECRET_KEY }}
-      run: terraform init
+      run: terraform init -reconfigure
 
     - name: Apply Terraform
       env:
