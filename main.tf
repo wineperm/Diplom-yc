@@ -29,14 +29,14 @@ resource "yandex_compute_instance" "k8s-master" {
   service_account_id = var.yc_service_account_id
 
   provisioner "file" {
-    source      = "~/.ssh/id_ed25519"
+    source      = "${path.module}/.ssh/id_ed25519"
     destination = "/home/ubuntu/.ssh/id_ed25519"
 
     connection {
       type        = "ssh"
       user        = "ubuntu"
       host        = self.network_interface.0.nat_ip_address
-      private_key = file("~/.ssh/id_ed25519")
+      private_key = file("${path.module}/.ssh/id_ed25519")
     }
   }
 }
@@ -72,15 +72,14 @@ resource "yandex_compute_instance" "k8s-worker" {
   service_account_id = var.yc_service_account_id
 
   provisioner "file" {
-    source      = "~/.ssh/id_ed25519"
+    source      = "${path.module}/.ssh/id_ed25519"
     destination = "/home/ubuntu/.ssh/id_ed25519"
 
     connection {
       type        = "ssh"
       user        = "ubuntu"
       host        = self.network_interface.0.nat_ip_address
-      private_key = file("~/.ssh/id_ed25519")
+      private_key = file("${path.module}/.ssh/id_ed25519")
     }
   }
 }
-
