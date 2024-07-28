@@ -51,6 +51,7 @@ jobs:
         TF_VAR_yc_token: ${{ secrets.YC_TOKEN }}
 #        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
         TF_VAR_service_account_key_file: ${{ secrets.SERVICE_ACCOUNT_KEY_FILE }}
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
       run: terraform init
 
     - name: Apply Terraform
@@ -61,4 +62,5 @@ jobs:
         TF_VAR_yc_token: ${{ secrets.YC_TOKEN }}
 #        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
         TF_VAR_service_account_key_file: ${{ secrets.SERVICE_ACCOUNT_KEY_FILE }}
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
       run: terraform apply -auto-approve
