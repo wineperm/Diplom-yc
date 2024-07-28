@@ -62,6 +62,18 @@ jobs:
         TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
       run: terraform apply -auto-approve
 
+    - name: Generate Ansible Inventory
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: terraform apply -target=local_file.ansible_inventory -auto-approve
+
+    - name: Display Ansible Inventory
+      run: cat inventory/mycluster/hosts.yaml
+
     - name: Clean up on failure
       if: failure()
       env:
