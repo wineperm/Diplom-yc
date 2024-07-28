@@ -88,9 +88,12 @@ resource "null_resource" "run_kubespray" {
 resource "null_resource" "configure_kubeconfig" {
   provisioner "remote-exec" {
     inline = [
-      "mkdir ~/.kube",
+      "echo 'Starting configuration...'",
+      "ls -l /etc/kubernetes/admin.conf",
+      "mkdir -p ~/.kube",
       "sudo cp /etc/kubernetes/admin.conf ~/.kube/config",
-      "sudo chown $(id -u):$(id -g) ~/.kube/config"
+      "sudo chown $(id -u):$(id -g) ~/.kube/config",
+      "echo 'Configuration completed.'"
     ]
 
     connection {
