@@ -18,14 +18,20 @@ variable "ssh_public_key" {
   type        = string
 }
 
-variable "master_zones" {
-  description = "Список зон для мастер-узлов"
-  type        = list(string)
-  default     = ["ru-central1-a", "ru-central1-b", "ru-central1-d"]
+variable "master_vm_count" {
+  description = "Количество мастер-узлов"
+  type        = number
+  default     = 1
 }
 
-variable "worker_zones" {
-  description = "Список зон для воркер-узлов"
+variable "worker_vm_count" {
+  description = "Количество воркер-узлов"
+  type        = number
+  default     = 1
+}
+
+variable "zones" {
+  description = "Список зон для создания подсетей"
   type        = list(string)
   default     = ["ru-central1-a", "ru-central1-b", "ru-central1-d"]
 }
