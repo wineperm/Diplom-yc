@@ -47,15 +47,6 @@ jobs:
         TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
       run: terraform apply -auto-approve
 
-    - name: Wait for SSH
-      run: |
-        for host in $(terraform output -json | jq -r '.k8s_master_ips.value[]'); do
-          ansible -m wait_for -a "host=$host port=22 delay=10 timeout=300" localhost
-        done
-        for host in $(terraform output -json | jq -r '.k8s_worker_ips.value[]'); do
-          ansible -m wait_for -a "host=$host port=22 delay=10 timeout=300" localhost
-        done
-
     - name: Clean up on failure
       if: failure()
       env:
