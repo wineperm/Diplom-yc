@@ -59,7 +59,6 @@ resource "yandex_compute_instance" "k8s-worker" {
   }
   service_account_id = var.yc_service_account_id
 
-}
 resource "local_file" "hosts_yaml" {
   content = templatefile("${path.module}/templates/hosts.yaml.tpl", {
     masters = yandex_compute_instance.k8s-master
