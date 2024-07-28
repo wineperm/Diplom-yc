@@ -1,7 +1,7 @@
 // Создание сервисного аккаунта
 resource "yandex_iam_service_account" "sa" {
   folder_id = var.yc_folder_id
-  name      = "tf-s3-sa"
+  name      = "wineperm"
 }
 
 // Назначение роли сервисному аккаунту
