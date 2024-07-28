@@ -31,7 +31,7 @@ resource "yandex_compute_instance" "k8s-master" {
 
 // Создание виртуальных машин для воркер-узлов
 resource "yandex_compute_instance" "k8s-worker" {
-  count       = 6
+  count       = 3
   name        = "k8s-worker-${count.index}"
   platform_id = "standard-v2"
   zone        = element(["ru-central1-a", "ru-central1-b", "ru-central1-d"], count.index % 3)
