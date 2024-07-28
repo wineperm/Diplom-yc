@@ -20,6 +20,6 @@ variable "ssh_public_key" {
   type        = string
 }
 
-variable "yc_token" {
-  type = string
-}
+#variable "yc_token" {
+#  type = string
+#}
