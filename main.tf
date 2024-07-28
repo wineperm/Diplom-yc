@@ -1,9 +1,9 @@
 // Создание виртуальных машин для мастер-узлов
 resource "yandex_compute_instance" "k8s-master" {
-  count       = 1
+  count       = var.master_vm_count
   name        = "k8s-master-${count.index}"
   platform_id = "standard-v2"
-  zone        = element(["ru-central1-a", "ru-central1-b", "ru-central1-d"], count.index)
+  zone        = element(var.zones, count.index % length(var.zones))
   resources {
     cores         = 2
     memory        = 4
@@ -17,7 +17,7 @@ resource "yandex_compute_instance" "k8s-master" {
     }
   }
   network_interface {
-    subnet_id = element([yandex_vpc_subnet.master-subnet-a.id, yandex_vpc_subnet.master-subnet-b.id, yandex_vpc_subnet.master-subnet-d.id], count.index)
+    subnet_id = element(yandex_vpc_subnet.master-subnet.*.id, count.index)
     nat       = true
   }
   scheduling_policy {
@@ -43,10 +43,10 @@ resource "yandex_compute_instance" "k8s-master" {
 
 // Создание виртуальных машин для воркер-узлов
 resource "yandex_compute_instance" "k8s-worker" {
-  count       = 1
+  count       = var.worker_vm_count
   name        = "k8s-worker-${count.index}"
   platform_id = "standard-v2"
-  zone        = element(["ru-central1-a", "ru-central1-b", "ru-central1-d"], count.index % 3)
+  zone        = element(var.zones, count.index % length(var.zones))
   resources {
     cores         = 2
     memory        = 4
@@ -60,7 +60,7 @@ resource "yandex_compute_instance" "k8s-worker" {
     }
   }
   network_interface {
-    subnet_id = element([yandex_vpc_subnet.worker-subnet-a.id, yandex_vpc_subnet.worker-subnet-b.id, yandex_vpc_subnet.worker-subnet-d.id], count.index % 3)
+    subnet_id = element(yandex_vpc_subnet.worker-subnet.*.id, count.index)
     nat       = true
   }
   scheduling_policy {
