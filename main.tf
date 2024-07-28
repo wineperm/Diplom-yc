@@ -26,6 +26,7 @@ resource "yandex_compute_instance" "k8s-master" {
   metadata = {
     ssh-keys = "ubuntu:${var.ssh_public_key}"
   }
+  service_account_id = var.yc_service_account_id
 }
 
 // Создание виртуальных машин для воркер-узлов
@@ -56,7 +57,7 @@ resource "yandex_compute_instance" "k8s-worker" {
   metadata = {
     ssh-keys = "ubuntu:${var.ssh_public_key}"
   }
-
+  service_account_id = var.yc_service_account_id
 
 }
 resource "local_file" "hosts_yaml" {
