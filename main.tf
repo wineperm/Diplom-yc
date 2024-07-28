@@ -39,6 +39,19 @@ resource "yandex_compute_instance" "k8s-master" {
       private_key = file("~/.ssh/id_ed25519")
     }
   }
+
+  provisioner "remote-exec" {
+    inline = [
+      "chmod 600 /home/ubuntu/.ssh/id_ed25519"
+    ]
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      host        = self.network_interface.0.nat_ip_address
+      private_key = file("~/.ssh/id_ed25519")
+    }
+  }
 }
 
 // Создание виртуальных машин для воркер-узлов
@@ -82,4 +95,26 @@ resource "yandex_compute_instance" "k8s-worker" {
       private_key = file("~/.ssh/id_ed25519")
     }
   }
+
+  provisioner "remote-exec" {
+    inline = [
+      "chmod 600 /home/ubuntu/.ssh/id_ed25519"
+    ]
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      host        = self.network_interface.0.nat_ip_address
+      private_key = file("~/.ssh/id_ed25519")
+    }
+  }
+}
+
+// Генерация файла инвентаря Ansible
+resource "local_file" "ansible_inventory" {
+  filename = "inventory/mycluster/hosts.yaml"
+  content  = templatefile("${path.module}/templates/hosts.yaml.tpl", {
+    masters = yandex_compute_instance.k8s-master
+    workers = yandex_compute_instance.k8s-worker
+  })
 }
