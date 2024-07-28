@@ -56,3 +56,10 @@ jobs:
         TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
         TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
       run: terraform destroy -auto-approve
+
+    - name: Clean up SSH keys
+      if: always()
+      run: |
+        rm -f ~/.ssh/id_ed25519
+        rm -f ~/.ssh/id_ed25519.pub
+        rm -f ~/.ssh/authorized_key.json
