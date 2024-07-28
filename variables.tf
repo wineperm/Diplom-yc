@@ -20,12 +20,3 @@ variable "ssh_public_key" {
   type        = string
 }
 
-variable "yc_access_key" {
-  description = "Yandex Cloud access key"
-  type        = string
-}
-
-variable "yc_secret_key" {
-  description = "Yandex Cloud secret key"
-  type        = string
-}
