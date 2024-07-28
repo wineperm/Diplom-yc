@@ -1,9 +1,9 @@
 // Создание виртуальных машин для мастер-узлов
 resource "yandex_compute_instance" "k8s-master" {
-  count       = var.master_vm_count
+  count       = 1
   name        = "k8s-master-${count.index}"
   platform_id = "standard-v2"
-  zone        = element(var.zones, count.index % length(var.zones))
+  zone        = element(["ru-central1-a", "ru-central1-b", "ru-central1-d"], count.index)
   resources {
     cores         = 2
     memory        = 4
@@ -17,7 +17,7 @@ resource "yandex_compute_instance" "k8s-master" {
     }
   }
   network_interface {
-    subnet_id = element(yandex_vpc_subnet.master-subnet.*.id, count.index)
+    subnet_id = element([yandex_vpc_subnet.master-subnet-a.id, yandex_vpc_subnet.master-subnet-b.id, yandex_vpc_subnet.master-subnet-d.id], count.index)
     nat       = true
   }
   scheduling_policy {
@@ -29,24 +29,24 @@ resource "yandex_compute_instance" "k8s-master" {
   service_account_id = var.yc_service_account_id
 
   provisioner "file" {
-    source      = var.ssh_private_key_path
+    source      = "~/.ssh/id_ed25519"
     destination = "/home/ubuntu/.ssh/id_ed25519"
 
     connection {
       type        = "ssh"
       user        = "ubuntu"
       host        = self.network_interface.0.nat_ip_address
-      private_key = file(var.ssh_private_key_path)
+      private_key = file("~/.ssh/id_ed25519")
     }
   }
 }
 
 // Создание виртуальных машин для воркер-узлов
 resource "yandex_compute_instance" "k8s-worker" {
-  count       = var.worker_vm_count
+  count       = 1
   name        = "k8s-worker-${count.index}"
   platform_id = "standard-v2"
-  zone        = element(var.zones, count.index % length(var.zones))
+  zone        = element(["ru-central1-a", "ru-central1-b", "ru-central1-d"], count.index % 3)
   resources {
     cores         = 2
     memory        = 4
@@ -60,7 +60,7 @@ resource "yandex_compute_instance" "k8s-worker" {
     }
   }
   network_interface {
-    subnet_id = element(yandex_vpc_subnet.worker-subnet.*.id, count.index)
+    subnet_id = element([yandex_vpc_subnet.worker-subnet-a.id, yandex_vpc_subnet.worker-subnet-b.id, yandex_vpc_subnet.worker-subnet-d.id], count.index % 3)
     nat       = true
   }
   scheduling_policy {
@@ -72,14 +72,14 @@ resource "yandex_compute_instance" "k8s-worker" {
   service_account_id = var.yc_service_account_id
 
   provisioner "file" {
-    source      = var.ssh_private_key_path
+    source      = "~/.ssh/id_ed25519"
     destination = "/home/ubuntu/.ssh/id_ed25519"
 
     connection {
       type        = "ssh"
       user        = "ubuntu"
       host        = self.network_interface.0.nat_ip_address
-      private_key = file(var.ssh_private_key_path)
+      private_key = file("~/.ssh/id_ed25519")
     }
   }
 }
