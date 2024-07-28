@@ -1,0 +1,40 @@
+name: Terraform
+
+on:
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4.1.7
+
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: v1.9.0
+
+    - name: Set up SSH keys
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
+        SERVICE_ACCOUNT_KEY_FILE: ${{ secrets.SERVICE_ACCOUNT_KEY_FILE }}
+      run: |
+        mkdir -p ~/.ssh
+        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        echo "$SSH_PUBLIC_KEY" > ~/.ssh/id_rsa.pub
+        chmod 600 ~/.ssh/id_rsa.pub
+        echo "$SERVICE_ACCOUNT_KEY_FILE" > ~/.ssh/authorized_key.json
+        chmod 600 ~/.ssh/authorized_key.json
+
+    - name: Destroy Terraform
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: terraform destroy -auto-approve
