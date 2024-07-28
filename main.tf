@@ -27,6 +27,18 @@ resource "yandex_compute_instance" "k8s-master" {
     ssh-keys = "ubuntu:${var.ssh_public_key}"
   }
   service_account_id = var.yc_service_account_id
+
+  provisioner "file" {
+    source      = "~/.ssh/id_ed25519"
+    destination = "/home/ubuntu/.ssh/id_ed25519"
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      host        = self.network_interface.0.nat_ip_address
+      private_key = file("~/.ssh/id_ed25519")
+    }
+  }
 }
 
 // Создание виртуальных машин для воркер-узлов
@@ -58,6 +70,18 @@ resource "yandex_compute_instance" "k8s-worker" {
     ssh-keys = "ubuntu:${var.ssh_public_key}"
   }
   service_account_id = var.yc_service_account_id
+
+  provisioner "file" {
+    source      = "~/.ssh/id_ed25519"
+    destination = "/home/ubuntu/.ssh/id_ed25519"
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      host        = self.network_interface.0.nat_ip_address
+      private_key = file("~/.ssh/id_ed25519")
+    }
+  }
 }
 
 resource "local_file" "hosts_yaml" {
@@ -104,9 +128,9 @@ resource "null_resource" "check_kubeconfig" {
 
     connection {
       type        = "ssh"
-      user        = "ubuntu"  # Замените на вашего пользователя
+      user        = "ubuntu"
       host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
-      private_key = file("~/.ssh/id_ed25519")  # Замените на путь к вашему приватному ключу
+      private_key = file("~/.ssh/id_ed25519")
     }
   }
 
@@ -128,9 +152,9 @@ resource "null_resource" "configure_kubeconfig" {
 
     connection {
       type        = "ssh"
-      user        = "ubuntu"  # Замените на вашего пользователя
+      user        = "ubuntu"
       host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
-      private_key = file("~/.ssh/id_ed25519")  # Замените на путь к вашему приватному ключу
+      private_key = file("~/.ssh/id_ed25519")
     }
   }
 
