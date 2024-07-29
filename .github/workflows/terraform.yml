@@ -75,8 +75,11 @@ jobs:
       run: terraform apply -auto-approve
 
     - name: Display Inventory Directory Contents
-      run: ls -la inventory/mycluster/
-
+      run: |
+        ls -la inventory/mycluster/
+        ls -la
+        pwd
+        
     - name: Display Ansible Inventory
       run: cat inventory/mycluster/hosts.yaml
 
