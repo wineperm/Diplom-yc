@@ -64,6 +64,7 @@ jobs:
          cp -r . /home/runner/work/Diplom-yc/Diplom-yc/
          pip3.11 install -r requirements.txt
          python3.11 -m pip install ruamel.yaml
+         cp -rfp . kubespray/
          cp -rfp inventory/sample inventory/mycluster
 
     - name: Generate Ansible Inventory
