@@ -117,13 +117,3 @@ resource "local_file" "ansible_inventory" {
   })
   filename = "${path.module}/inventory/mycluster/hosts.yaml"
 }
-
-resource "null_resource" "replace_text" {
-  depends_on = [local_file.ansible_inventory]
-
-  provisioner "local-exec" {
-    command = <<EOT
-      sed -i 's/hosts: \*\*\*/hosts: {}/' ${path.module}/inventory/mycluster/hosts.yaml
-    EOT
-  }
-}
