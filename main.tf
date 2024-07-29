@@ -1,5 +1,5 @@
 resource "yandex_compute_instance" "k8s-master" {
-  count       = 2
+  count       = 1
   name        = "k8s-master-${count.index}"
   platform_id = "standard-v2"
   zone        = element(["ru-central1-a", "ru-central1-b", "ru-central1-d"], count.index)
@@ -29,7 +29,7 @@ resource "yandex_compute_instance" "k8s-master" {
 
   provisioner "file" {
     source      = "~/.ssh/id_ed25519"
-    destination = "~/.ssh/id_ed25519"
+    destination = "/home/ubuntu/.ssh/id_ed25519"
 
     connection {
       type        = "ssh"
@@ -41,10 +41,10 @@ resource "yandex_compute_instance" "k8s-master" {
 
   provisioner "remote-exec" {
     inline = [
-      "chmod 600 ~/.ssh/id_ed25519",
-      "mkdir -p ~/.ssh",
-      "echo '${var.ssh_public_key}' >> ~/.ssh/authorized_keys",
-      "chmod 600 ~/.ssh/authorized_keys"
+      "chmod 600 /home/ubuntu/.ssh/id_ed25519",
+      "mkdir -p /home/ubuntu/.ssh",
+      "echo '${var.ssh_public_key}' >> /home/ubuntu/.ssh/authorized_keys",
+      "chmod 600 /home/ubuntu/.ssh/authorized_keys"
     ]
 
     connection {
@@ -57,7 +57,7 @@ resource "yandex_compute_instance" "k8s-master" {
 }
 
 resource "yandex_compute_instance" "k8s-worker" {
-  count       = 2
+  count       = 1
   name        = "k8s-worker-${count.index}"
   platform_id = "standard-v2"
   zone        = element(["ru-central1-a", "ru-central1-b", "ru-central1-d"], count.index % 3)
@@ -87,7 +87,7 @@ resource "yandex_compute_instance" "k8s-worker" {
 
   provisioner "file" {
     source      = "~/.ssh/id_ed25519"
-    destination = "~/.ssh/id_ed25519"
+    destination = "/home/ubuntu/.ssh/id_ed25519"
 
     connection {
       type        = "ssh"
@@ -99,10 +99,10 @@ resource "yandex_compute_instance" "k8s-worker" {
 
   provisioner "remote-exec" {
     inline = [
-      "chmod 600 ~/.ssh/id_ed25519",
-      "mkdir -p ~/.ssh",
-      "echo '${var.ssh_public_key}' >> ~/.ssh/authorized_keys",
-      "chmod 600 ~/.ssh/authorized_keys"
+      "chmod 600 /home/ubuntu/.ssh/id_ed25519",
+      "mkdir -p /home/ubuntu/.ssh",
+      "echo '${var.ssh_public_key}' >> /home/ubuntu/.ssh/authorized_keys",
+      "chmod 600 /home/ubuntu/.ssh/authorized_keys"
     ]
 
     connection {
