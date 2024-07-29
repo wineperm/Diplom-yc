@@ -110,11 +110,20 @@ resource "yandex_compute_instance" "k8s-worker" {
   }
 }
 
-// Генерация файла инвентаря Ansible
 resource "local_file" "ansible_inventory" {
-  filename = "inventory/mycluster/hosts.yaml"
-  content  = templatefile("${path.module}/templates/hosts.yaml.tpl", {
+  content = templatefile("${path.module}/templates/hosts.yaml.tpl", {
     masters = yandex_compute_instance.k8s-master
     workers = yandex_compute_instance.k8s-worker
   })
+  filename = "${path.module}/inventory/mycluster/hosts.yaml"
+}
+
+resource "null_resource" "replace_text" {
+  depends_on = [local_file.ansible_inventory]
+
+  provisioner "local-exec" {
+    command = <<EOT
+      sed -i 's/hosts: \*\*\*/hosts: {}/' ${path.module}/inventory/mycluster/hosts.yaml
+    EOT
+  }
 }
