@@ -33,11 +33,4 @@ all:
         kube_control_plane:
         kube_node:
     calico_rr:
-      hosts:
-%{ if calico_rr_hosts is defined and calico_rr_hosts|length > 0 ~}
-%{ for host in calico_rr_hosts ~}
-        ${host}:
-%{ endfor ~}
-%{ else ~}
-        {}
-%{ endif ~}
+      hosts: {}
