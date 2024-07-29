@@ -110,10 +110,10 @@ resource "yandex_compute_instance" "k8s-worker" {
   }
 }
 
-resource "local_file" "ansible_inventory" {
-  content = templatefile("${path.module}/templates/hosts.yaml.tpl", {
-    masters = yandex_compute_instance.k8s-master
-    workers = yandex_compute_instance.k8s-worker
-  })
-  filename = "${path.module}/inventory/mycluster/hosts.yaml"
-}
+#resource "local_file" "ansible_inventory" {
+#  content = templatefile("${path.module}/templates/hosts.yaml.tpl", {
+#    masters = yandex_compute_instance.k8s-master
+#    workers = yandex_compute_instance.k8s-worker
+#  })
+#  filename = "${path.module}/inventory/mycluster/hosts.yaml"
+#}
