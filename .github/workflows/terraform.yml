@@ -84,7 +84,7 @@ jobs:
       run: cat inventory/mycluster/hosts.yaml
 
     - name: Run Ansible Playbook
-      run: ansible-playbook -i ~/kubespray/inventory/mycluster/hosts.yaml ~/kubespray/cluster.yml -b -v
+      run: ansible-playbook -i ~/kubespray/inventory/mycluster/hosts.yaml ~/kubespray/playbooks/cluster.yml -b -v
 
     - name: Clean up on failure
       if: failure()
