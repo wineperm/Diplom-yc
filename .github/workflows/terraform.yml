@@ -90,6 +90,9 @@ jobs:
     - name: Display Ansible Inventory
       run: cat inventory/mycluster/hosts.yaml
 
+    - name: Print workspace path
+      run: echo $GITHUB_WORKSPACE
+
     - name: Run Ansible Playbook
       run: ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -v
 
