@@ -57,7 +57,7 @@ jobs:
          sudo -i
          curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
          python3.11 get-pip.py
-         logout
+         exit
 
          git clone https://github.com/kubernetes-sigs/kubespray.git
          cd kubespray
