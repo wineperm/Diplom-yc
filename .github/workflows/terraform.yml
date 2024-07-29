@@ -77,6 +77,10 @@ jobs:
     - name: Display Ansible Inventory
       run: cat inventory/mycluster/hosts.yaml
 
+    - name: Modify Ansible Inventory
+      run: |
+        sed -i 's/hosts: \*\*\*/hosts: {}/' inventory/mycluster/hosts.yaml
+
     - name: Run Ansible Playbook
       run: |
         source venv/bin/activate
