@@ -127,6 +127,9 @@ jobs:
     - name: Display Ansible Inventory
       run: cat kubespray/inventory/mycluster/hosts.yaml
 
+    - name: Wait before deploying Kubernetes cluster
+      run: sleep 90
+
     - name: Deploy Kubernetes cluster
       run: |
         cd kubespray
