@@ -5,7 +5,7 @@ on:
 
 jobs:
   terraform:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
     - name: Checkout code
       uses: actions/checkout@v4.1.7
@@ -29,21 +29,6 @@ jobs:
         echo "$SERVICE_ACCOUNT_KEY_FILE" > ~/.ssh/authorized_key.json
         chmod 600 ~/.ssh/authorized_key.json
 
-    - name: Install necessary packages
-      run: |
-        sudo apt update -y
-        sudo apt install software-properties-common -y
-        sudo add-apt-repository ppa:deadsnakes/ppa
-        sudo apt update -y
-        sudo apt install python3.12-venv -y
-        python3.12 -m venv venv
-        source venv/bin/activate
-        git clone https://github.com/kubernetes-sigs/kubespray
-        cd kubespray/
-        pip3 install -r requirements.txt
-        pip3 install ruamel.yaml
-        cp -rfp inventory/sample inventory/mycluster
-
     - name: Initialize Terraform
       env:
         TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
@@ -62,6 +47,24 @@ jobs:
         TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
       run: terraform apply -auto-approve
 
+    - name: Install necessary packages
+      run: |
+         sudo apt-get update -y
+         sudo apt install software-properties-common
+         sudo add-apt-repository ppa:deadsnakes/ppa -y
+         sudo apt-get update -y
+         sudo apt-get install git pip python3.11 -y
+         sudo -i
+         curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+         python3.11 get-pip.py
+         logout
+
+         git clone https://github.com/kubernetes-sigs/kubespray.git
+         cd kubespray
+         pip3.11 install -r requirements.txt
+         python3.11 -m pip install ruamel.yaml
+         cp -rfp inventory/sample inventory/mycluster
+
     - name: Generate Ansible Inventory
       env:
         TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
@@ -69,30 +72,7 @@ jobs:
         TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
         TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
         TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
-      run: |
-        terraform output -json > terraform_output.json
-        python3 - <<EOF
-        import json
-        from jinja2 import Template
-
-        with open('terraform_output.json') as f:
-            output = json.load(f)
-
-        masters = output['k8s-master']['value']
-        workers = output['k8s-worker']['value']
-
-        with open('templates/hosts.yaml.tpl') as f:
-            template = Template(f.read())
-
-        rendered_inventory = template.render(masters=masters, workers=workers)
-
-        with open('inventory/mycluster/hosts.yaml', 'w') as f:
-            f.write(rendered_inventory)
-        EOF
-
-    - name: Modify Ansible Inventory
-      run: |
-        sed -i 's/hosts: \*\*\*/hosts: {}/' inventory/mycluster/hosts.yaml
+      run: terraform apply -auto-approve
 
     - name: Display Inventory Directory Contents
       run: ls -la inventory/mycluster/
