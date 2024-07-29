@@ -1,6 +1,5 @@
-// Создание виртуальных машин для мастер-узлов
 resource "yandex_compute_instance" "k8s-master" {
-  count       = 2
+  count       = 1
   name        = "k8s-master-${count.index}"
   platform_id = "standard-v2"
   zone        = element(["ru-central1-a", "ru-central1-b", "ru-central1-d"], count.index)
@@ -54,9 +53,8 @@ resource "yandex_compute_instance" "k8s-master" {
   }
 }
 
-// Создание виртуальных машин для воркер-узлов
 resource "yandex_compute_instance" "k8s-worker" {
-  count       = 2
+  count       = 1
   name        = "k8s-worker-${count.index}"
   platform_id = "standard-v2"
   zone        = element(["ru-central1-a", "ru-central1-b", "ru-central1-d"], count.index % 3)
@@ -109,11 +107,3 @@ resource "yandex_compute_instance" "k8s-worker" {
     }
   }
 }
-
-#resource "local_file" "ansible_inventory" {
-#  content = templatefile("${path.module}/templates/hosts.yaml.tpl", {
-#    masters = yandex_compute_instance.k8s-master
-#    workers = yandex_compute_instance.k8s-worker
-#  })
-#  filename = "${path.module}/inventory/mycluster/hosts.yaml"
-#}
