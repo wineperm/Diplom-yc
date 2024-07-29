@@ -130,7 +130,7 @@ jobs:
     - name: Deploy Kubernetes cluster
       run: |
         cd kubespray
-        ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -v
+        ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -vvv
 
     - name: Clean up on failure
       if: failure()
