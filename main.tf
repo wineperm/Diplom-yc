@@ -110,11 +110,11 @@ resource "yandex_compute_instance" "k8s-worker" {
   }
 }
 
+// Генерация файла инвентаря Ansible
 resource "local_file" "ansible_inventory" {
-  content = templatefile("${path.module}/templates/hosts.yaml.tpl", {
+  filename = "inventory/mycluster/hosts.yaml"
+  content  = templatefile("${path.module}/templates/hosts.yaml.tpl", {
     masters = yandex_compute_instance.k8s-master
     workers = yandex_compute_instance.k8s-worker
-    calico_rr_hosts = ["calico_rr_0", "calico_rr_1", "calico_rr_2", "calico_rr_3"]
   })
-  filename = "${path.module}/inventory/mycluster/hosts.yaml"
 }
