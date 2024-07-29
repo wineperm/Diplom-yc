@@ -63,6 +63,7 @@ jobs:
          cd kubespray
          pip3.11 install -r requirements.txt
          python3.11 -m pip install ruamel.yaml
+         cp -r kubespray/* /home/runner/work/Diplom-yc/Diplom-yc/
          cp -rfp inventory/sample inventory/mycluster
 
     - name: Generate Ansible Inventory
@@ -88,7 +89,7 @@ jobs:
       run: cat inventory/mycluster/hosts.yaml
 
     - name: Run Ansible Playbook
-      run: ansible-playbook -i ~/kubespray/inventory/mycluster/hosts.yaml ~/kubespray/playbooks/cluster.yml -b -v
+      run: ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -v
 
     - name: Clean up on failure
       if: failure()
