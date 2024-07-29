@@ -67,8 +67,8 @@ jobs:
     - name: Generate Ansible Inventory
       run: |
         mkdir -p kubespray/inventory/mycluster
-        MASTER_IPS=$(terraform output -raw master_ips)
-        WORKER_IPS=$(terraform output -raw worker_ips)
+        MASTER_IPS=$(terraform output -json master_ips)
+        WORKER_IPS=$(terraform output -json worker_ips)
         python3 - <<EOF
         import json
         from jinja2 import Template
