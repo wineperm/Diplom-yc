@@ -79,19 +79,12 @@ jobs:
     - name: Display Inventory Directory Contents
       run: |
         ls -la inventory/mycluster/
+        ls -la kubespray/
         ls -la 
-        ls -la /home/runner/work/Diplom-yc/
-        ls -la /home/runner/work/Diplom-yc/Diplom-yc
-        ls -la /home/runner/work/
-        ls -la /home/runner/
-        ls -la /home/
         pwd
         
     - name: Display Ansible Inventory
       run: cat inventory/mycluster/hosts.yaml
-
-    - name: Print workspace path
-      run: echo $GITHUB_WORKSPACE
 
     - name: Run Ansible Playbook
       run: ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -v
