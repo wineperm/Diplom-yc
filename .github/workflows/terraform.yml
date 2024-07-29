@@ -80,11 +80,7 @@ jobs:
     - name: Run Ansible Playbook
       run: |
         source venv/bin/activate
-        pwd
         cd kubespray/
-        pwd
-        sed -i 's/hosts: \*\*\*/hosts: {}/' inventory/mycluster/hosts.yaml
-        cat inventory/mycluster/hosts.yaml
         ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -v
 
     - name: Clean up on failure
@@ -117,3 +113,1941 @@ jobs:
         rm -f ~/.ssh/id_ed25519
         rm -f ~/.ssh/id_ed25519.pub
         rm -f ~/.ssh/authorized_key.json
+
+Your GitHub Actions workflow is designed to automate the process of applying Terraform configurations and running an Ansible playbook. Below is a breakdown of the steps and some suggestions for improvement:
+
+Workflow Breakdown
+Checkout code:
+
+Uses actions/checkout@v4.1.7 to checkout the repository code.
+Set up Terraform:
+
+Uses hashicorp/setup-terraform@v3.1.1 to set up Terraform with version v1.9.0.
+Set up SSH keys:
+
+Sets up SSH keys and a service account key file using environment variables.
+Install necessary packages:
+
+Installs necessary packages and sets up a Python virtual environment.
+Clones the kubespray repository and installs its dependencies.
+Initialize Terraform:
+
+Initializes Terraform with environment variables for Yandex Cloud and SSH keys.
+Apply Terraform:
+
+Applies the Terraform configuration.
+Generate Ansible Inventory:
+
+Applies the Terraform configuration again (this step seems redundant).
+Display Inventory Directory Contents:
+
+Lists the contents of the inventory/mycluster/ directory.
+Display Ansible Inventory:
+
+Displays the contents of the inventory/mycluster/hosts.yaml file.
+Run Ansible Playbook:
+
+Activates the Python virtual environment and runs the Ansible playbook.
+Clean up on failure:
+
+Destroys the Terraform infrastructure if any step fails.
+Display Success Message:
+
+Displays a success message if all steps succeed.
+Destroy Infrastructure:
+
+Destroys the Terraform infrastructure regardless of the outcome.
+Clean up SSH keys:
+
+Cleans up the SSH keys and service account key file.
+Suggestions for Improvement
+Redundant Terraform Apply:
+
+The step "Generate Ansible Inventory" runs terraform apply -auto-approve again, which is redundant. You should remove this step or modify it to only generate the inventory if needed.
+Conditional Cleanup:
+
+The "Clean up on failure" step is good, but you might want to add a condition to skip the destruction if the workflow is canceled manually.
+Environment Variables:
+
+Ensure that all environment variables are correctly set and used. For example, TF_VAR_service_account_key_file should point to the correct file path.
+Error Handling:
+
+Add more specific error handling and logging to help diagnose issues if something goes wrong.
+Security:
+
+Make sure that sensitive information like SSH keys and service account keys are handled securely. Consider using GitHub Secrets for storing these values.
+Here's a revised version of your workflow with some improvements:
+
+
+name: Terraform Apply
+
+on:
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4.1.7
+
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v3.1.1
+      with:
+        terraform_version: v1.9.0
+
+    - name: Set up SSH keys
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
+        SERVICE_ACCOUNT_KEY_FILE: ${{ secrets.SERVICE_ACCOUNT_KEY_FILE }}
+      run: |
+        mkdir -p ~/.ssh
+        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+        echo "$SSH_PUBLIC_KEY" > ~/.ssh/id_ed25519.pub
+        chmod 600 ~/.ssh/id_ed25519.pub
+        echo "$SERVICE_ACCOUNT_KEY_FILE" > ~/.ssh/authorized_key.json
+        chmod 600 ~/.ssh/authorized_key.json
+
+    - name: Install necessary packages
+      run: |
+        sudo apt update -y
+        sudo apt install software-properties-common -y
+        sudo add-apt-repository ppa:deadsnakes/ppa
+        sudo apt update -y
+        sudo apt install python3.12-venv -y
+        python3.12 -m venv venv
+        source venv/bin/activate
+        git clone https://github.com/kubernetes-sigs/kubespray
+        cd kubespray/
+        pip3 install -r requirements.txt
+        pip3 install ruamel.yaml
+        cp -rfp inventory/sample inventory/mycluster
+
+    - name: Initialize Terraform
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: terraform init
+
+    - name: Apply Terraform
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: terraform apply -auto-approve
+
+    - name: Display Inventory Directory Contents
+      run: ls -la inventory/mycluster/
+
+    - name: Display Ansible Inventory
+      run: cat inventory/mycluster/hosts.yaml
+
+    - name: Run Ansible Playbook
+      run: |
+        source venv/bin/activate
+        cd kubespray/
+        ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -v
+
+    - name: Clean up on failure
+      if: failure()
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: terraform destroy -auto-approve
+
+    - name: Display Success Message
+      if: success()
+      run: echo "ВСЕ НОРМАЛЬНО"
+
+    - name: Destroy Infrastructure
+      if: always()
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: terraform destroy -auto-approve
+
+    - name: Clean up SSH keys
+      if: always()
+      run: |
+        rm -f ~/.ssh/id_ed25519
+        rm -f ~/.ssh/id_ed25519.pub
+        rm -f ~/.ssh/authorized_key.json
+This revised workflow removes the redundant terraform apply step and ensures that the cleanup steps are executed correctly.
+
+all:
+  hosts:
+%{ for i, master in masters ~}
+    k8s-master-${i}:
+      ansible_host: ${master.network_interface.0.nat_ip_address}
+      ip: ${master.network_interface.0.nat_ip_address}
+      access_ip: ${master.network_interface.0.nat_ip_address}
+%{ endfor ~}
+%{ for i, worker in workers ~}
+    k8s-worker-${i}:
+      ansible_host: ${worker.network_interface.0.nat_ip_address}
+      ip: ${worker.network_interface.0.nat_ip_address}
+      access_ip: ${worker.network_interface.0.nat_ip_address}
+%{ endfor ~}
+  children:
+    kube_control_plane:
+      hosts:
+%{ for i, master in masters ~}
+        k8s-master-${i}:
+%{ endfor ~}
+    kube_node:
+      hosts:
+%{ for i, worker in workers ~}
+        k8s-worker-${i}:
+%{ endfor ~}
+    etcd:
+      hosts:
+%{ for i, master in masters ~}
+        k8s-master-${i}:
+%{ endfor ~}
+    k8s_cluster:
+      children:
+        kube_control_plane:
+        kube_node:
+    calico_rr:
+      hosts: {}
+
+Your Ansible inventory file is structured to dynamically generate host entries based on the masters and workers variables. This is typically done using a templating engine like Jinja2 in Ansible. However, the syntax you've used (%{ for i, master in masters ~}) is not standard Jinja2 syntax.
+
+To properly generate the inventory file using Jinja2, you should use the following syntax:
+
+
+all:
+  hosts:
+    {% for i, master in masters %}
+    k8s-master-{{ i }}:
+      ansible_host: {{ master.network_interface.0.nat_ip_address }}
+      ip: {{ master.network_interface.0.nat_ip_address }}
+      access_ip: {{ master.network_interface.0.nat_ip_address }}
+    {% endfor %}
+    {% for i, worker in workers %}
+    k8s-worker-{{ i }}:
+      ansible_host: {{ worker.network_interface.0.nat_ip_address }}
+      ip: {{ worker.network_interface.0.nat_ip_address }}
+      access_ip: {{ worker.network_interface.0.nat_ip_address }}
+    {% endfor %}
+  children:
+    kube_control_plane:
+      hosts:
+        {% for i, master in masters %}
+        k8s-master-{{ i }}:
+        {% endfor %}
+    kube_node:
+      hosts:
+        {% for i, worker in workers %}
+        k8s-worker-{{ i }}:
+        {% endfor %}
+    etcd:
+      hosts:
+        {% for i, master in masters %}
+        k8s-master-{{ i }}:
+        {% endfor %}
+    k8s_cluster:
+      children:
+        kube_control_plane:
+        kube_node:
+    calico_rr:
+      hosts: {}
+Explanation
+Jinja2 Syntax:
+
+{% for i, master in masters %}: This starts a loop over the masters list.
+{{ i }} and {{ master.network_interface.0.nat_ip_address }}: These are placeholders for the index and the IP address of the master nodes, respectively.
+{% endfor %}: This ends the loop.
+Hosts Section:
+
+The hosts section dynamically generates entries for each master and worker node.
+Children Section:
+
+The children section defines groups of hosts (kube_control_plane, kube_node, etcd, k8s_cluster, and calico_rr).
+Each group is populated with the appropriate hosts using the same looping mechanism.
+Usage in GitHub Actions
+To generate this inventory file dynamically within your GitHub Actions workflow, you can use a script to render the template with the appropriate variables. Here's an example of how you might do this:
+
+Create a Template File:
+
+Save the above Jinja2 template as inventory_template.yaml.
+Render the Template in GitHub Actions:
+
+Use a script to render the template with the variables provided by Terraform.
+Here's an example of how you can modify your GitHub Actions workflow to include this step:
+
+
+name: Terraform Apply
+
+on:
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4.1.7
+
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v3.1.1
+      with:
+        terraform_version: v1.9.0
+
+    - name: Set up SSH keys
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
+        SERVICE_ACCOUNT_KEY_FILE: ${{ secrets.SERVICE_ACCOUNT_KEY_FILE }}
+      run: |
+        mkdir -p ~/.ssh
+        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+        echo "$SSH_PUBLIC_KEY" > ~/.ssh/id_ed25519.pub
+        chmod 600 ~/.ssh/id_ed25519.pub
+        echo "$SERVICE_ACCOUNT_KEY_FILE" > ~/.ssh/authorized_key.json
+        chmod 600 ~/.ssh/authorized_key.json
+
+    - name: Install necessary packages
+      run: |
+        sudo apt update -y
+        sudo apt install software-properties-common -y
+        sudo add-apt-repository ppa:deadsnakes/ppa
+        sudo apt update -y
+        sudo apt install python3.12-venv -y
+        python3.12 -m venv venv
+        source venv/bin/activate
+        git clone https://github.com/kubernetes-sigs/kubespray
+        cd kubespray/
+        pip3 install -r requirements.txt
+        pip3 install ruamel.yaml
+        cp -rfp inventory/sample inventory/mycluster
+
+    - name: Initialize Terraform
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: terraform init
+
+    - name: Apply Terraform
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: terraform apply -auto-approve
+
+    - name: Generate Ansible Inventory
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: |
+        terraform output -json > terraform_output.json
+        python3 - <<EOF
+        import json
+        from jinja2 import Template
+
+        with open('terraform_output.json') as f:
+            output = json.load(f)
+
+        masters = output['masters']['value']
+        workers = output['workers']['value']
+
+        with open('inventory_template.yaml') as f:
+            template = Template(f.read())
+
+        rendered_inventory = template.render(masters=masters, workers=workers)
+
+        with open('inventory/mycluster/hosts.yaml', 'w') as f:
+            f.write(rendered_inventory)
+        EOF
+
+    - name: Display Inventory Directory Contents
+      run: ls -la inventory/mycluster/
+
+    - name: Display Ansible Inventory
+      run: cat inventory/mycluster/hosts.yaml
+
+    - name: Run Ansible Playbook
+      run: |
+        source venv/bin/activate
+        cd kubespray/
+        ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -v
+
+    - name: Clean up on failure
+      if: failure()
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: terraform destroy -auto-approve
+
+    - name: Display Success Message
+      if: success()
+      run: echo "ВСЕ НОРМАЛЬНО"
+
+    - name: Destroy Infrastructure
+      if: always()
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: terraform destroy -auto-approve
+
+    - name: Clean up SSH keys
+      if: always()
+      run: |
+        rm -f ~/.ssh/id_ed25519
+        rm -f ~/.ssh/id_ed25519.pub
+        rm -f ~/.ssh/authorized_key.json
+This workflow includes a step to render the Ansible inventory template using Python and Jinja2, ensuring that the inventory file is dynamically generated based on the Terraform output.
+
+// Создание виртуальных машин для мастер-узлов
+resource "yandex_compute_instance" "k8s-master" {
+  count       = 1
+  name        = "k8s-master-${count.index}"
+  platform_id = "standard-v2"
+  zone        = element(["ru-central1-a", "ru-central1-b", "ru-central1-d"], count.index)
+  resources {
+    cores         = 2
+    memory        = 4
+    core_fraction = 5
+  }
+  boot_disk {
+    initialize_params {
+      image_id = "fd8k2vlv3b3duv812ama"
+      type     = "network-hdd"
+      size     = 10
+    }
+  }
+  network_interface {
+    subnet_id = element([yandex_vpc_subnet.master-subnet-a.id, yandex_vpc_subnet.master-subnet-b.id, yandex_vpc_subnet.master-subnet-d.id], count.index)
+    nat       = true
+  }
+  scheduling_policy {
+    preemptible = true
+  }
+  metadata = {
+    ssh-keys = "ubuntu:${var.ssh_public_key}"
+  }
+  service_account_id = var.yc_service_account_id
+
+  provisioner "file" {
+    source      = "~/.ssh/id_ed25519"
+    destination = "/home/ubuntu/.ssh/id_ed25519"
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      host        = self.network_interface.0.nat_ip_address
+      private_key = file("~/.ssh/id_ed25519")
+    }
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "chmod 600 /home/ubuntu/.ssh/id_ed25519"
+    ]
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      host        = self.network_interface.0.nat_ip_address
+      private_key = file("~/.ssh/id_ed25519")
+    }
+  }
+}
+
+// Создание виртуальных машин для воркер-узлов
+resource "yandex_compute_instance" "k8s-worker" {
+  count       = 1
+  name        = "k8s-worker-${count.index}"
+  platform_id = "standard-v2"
+  zone        = element(["ru-central1-a", "ru-central1-b", "ru-central1-d"], count.index % 3)
+  resources {
+    cores         = 2
+    memory        = 4
+    core_fraction = 5
+  }
+  boot_disk {
+    initialize_params {
+      image_id = "fd8k2vlv3b3duv812ama"
+      type     = "network-hdd"
+      size     = 10
+    }
+  }
+  network_interface {
+    subnet_id = element([yandex_vpc_subnet.worker-subnet-a.id, yandex_vpc_subnet.worker-subnet-b.id, yandex_vpc_subnet.worker-subnet-d.id], count.index % 3)
+    nat       = true
+  }
+  scheduling_policy {
+    preemptible = true
+  }
+  metadata = {
+    ssh-keys = "ubuntu:${var.ssh_public_key}"
+  }
+  service_account_id = var.yc_service_account_id
+
+  provisioner "file" {
+    source      = "~/.ssh/id_ed25519"
+    destination = "/home/ubuntu/.ssh/id_ed25519"
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      host        = self.network_interface.0.nat_ip_address
+      private_key = file("~/.ssh/id_ed25519")
+    }
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "chmod 600 /home/ubuntu/.ssh/id_ed25519"
+    ]
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      host        = self.network_interface.0.nat_ip_address
+      private_key = file("~/.ssh/id_ed25519")
+    }
+  }
+}
+
+resource "local_file" "ansible_inventory" {
+  content = templatefile("${path.module}/templates/hosts.yaml.tpl", {
+    masters = yandex_compute_instance.k8s-master
+    workers = yandex_compute_instance.k8s-worker
+  })
+  filename = "${path.module}/inventory/mycluster/hosts.yaml"
+}
+
+Your Terraform configuration is designed to create virtual machines for Kubernetes master and worker nodes, and it also generates an Ansible inventory file using a template. Below is a detailed breakdown of your configuration and some suggestions for improvement.
+
+Breakdown of the Configuration
+Master Nodes:
+
+Creates a single master node with specific configurations.
+Uses a provisioner to copy the SSH key to the master node and set the correct permissions.
+Worker Nodes:
+
+Creates a single worker node with specific configurations.
+Uses a provisioner to copy the SSH key to the worker node and set the correct permissions.
+Ansible Inventory:
+
+Generates an Ansible inventory file using a template and the details of the created master and worker nodes.
+Suggestions for Improvement
+Dynamic Count:
+
+Instead of hardcoding the count to 1, you might want to make it dynamic based on a variable.
+Error Handling:
+
+Add error handling for the provisioners to ensure that the SSH key is copied and permissions are set correctly.
+Template File:
+
+Ensure that the template file (hosts.yaml.tpl) exists and is correctly formatted.
+Security:
+
+Make sure that the SSH keys and other sensitive information are handled securely.
+Here's an improved version of your Terraform configuration:
+
+
+// Создание виртуальных машин для мастер-узлов
+resource "yandex_compute_instance" "k8s-master" {
+  count       = var.master_count
+  name        = "k8s-master-${count.index}"
+  platform_id = "standard-v2"
+  zone        = element(["ru-central1-a", "ru-central1-b", "ru-central1-d"], count.index)
+  resources {
+    cores         = 2
+    memory        = 4
+    core_fraction = 5
+  }
+  boot_disk {
+    initialize_params {
+      image_id = "fd8k2vlv3b3duv812ama"
+      type     = "network-hdd"
+      size     = 10
+    }
+  }
+  network_interface {
+    subnet_id = element([yandex_vpc_subnet.master-subnet-a.id, yandex_vpc_subnet.master-subnet-b.id, yandex_vpc_subnet.master-subnet-d.id], count.index)
+    nat       = true
+  }
+  scheduling_policy {
+    preemptible = true
+  }
+  metadata = {
+    ssh-keys = "ubuntu:${var.ssh_public_key}"
+  }
+  service_account_id = var.yc_service_account_id
+
+  provisioner "file" {
+    source      = "~/.ssh/id_ed25519"
+    destination = "/home/ubuntu/.ssh/id_ed25519"
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      host        = self.network_interface.0.nat_ip_address
+      private_key = file("~/.ssh/id_ed25519")
+    }
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "chmod 600 /home/ubuntu/.ssh/id_ed25519"
+    ]
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      host        = self.network_interface.0.nat_ip_address
+      private_key = file("~/.ssh/id_ed25519")
+    }
+  }
+}
+
+// Создание виртуальных машин для воркер-узлов
+resource "yandex_compute_instance" "k8s-worker" {
+  count       = var.worker_count
+  name        = "k8s-worker-${count.index}"
+  platform_id = "standard-v2"
+  zone        = element(["ru-central1-a", "ru-central1-b", "ru-central1-d"], count.index % 3)
+  resources {
+    cores         = 2
+    memory        = 4
+    core_fraction = 5
+  }
+  boot_disk {
+    initialize_params {
+      image_id = "fd8k2vlv3b3duv812ama"
+      type     = "network-hdd"
+      size     = 10
+    }
+  }
+  network_interface {
+    subnet_id = element([yandex_vpc_subnet.worker-subnet-a.id, yandex_vpc_subnet.worker-subnet-b.id, yandex_vpc_subnet.worker-subnet-d.id], count.index % 3)
+    nat       = true
+  }
+  scheduling_policy {
+    preemptible = true
+  }
+  metadata = {
+    ssh-keys = "ubuntu:${var.ssh_public_key}"
+  }
+  service_account_id = var.yc_service_account_id
+
+  provisioner "file" {
+    source      = "~/.ssh/id_ed25519"
+    destination = "/home/ubuntu/.ssh/id_ed25519"
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      host        = self.network_interface.0.nat_ip_address
+      private_key = file("~/.ssh/id_ed25519")
+    }
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "chmod 600 /home/ubuntu/.ssh/id_ed25519"
+    ]
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      host        = self.network_interface.0.nat_ip_address
+      private_key = file("~/.ssh/id_ed25519")
+    }
+  }
+}
+
+resource "local_file" "ansible_inventory" {
+  content = templatefile("${path.module}/templates/hosts.yaml.tpl", {
+    masters = yandex_compute_instance.k8s-master
+    workers = yandex_compute_instance.k8s-worker
+  })
+  filename = "${path.module}/inventory/mycluster/hosts.yaml"
+}
+Variables
+Make sure to define the variables master_count, worker_count, ssh_public_key, and yc_service_account_id in your variables.tf file:
+
+
+variable "master_count" {
+  description = "Number of master nodes"
+  type        = number
+  default     = 1
+}
+
+variable "worker_count" {
+  description = "Number of worker nodes"
+  type        = number
+  default     = 1
+}
+
+variable "ssh_public_key" {
+  description = "SSH public key for accessing the instances"
+  type        = string
+}
+
+variable "yc_service_account_id" {
+  description = "Yandex Cloud service account ID"
+  type        = string
+}
+Template File (hosts.yaml.tpl)
+Ensure that your template file is correctly formatted. Here's an example based on your previous template:
+
+
+all:
+  hosts:
+    {% for i, master in masters %}
+    k8s-master-{{ i }}:
+      ansible_host: {{ master.network_interface.0.nat_ip_address }}
+      ip: {{ master.network_interface.0.nat_ip_address }}
+      access_ip: {{ master.network_interface.0.nat_ip_address }}
+    {% endfor %}
+    {% for i, worker in workers %}
+    k8s-worker-{{ i }}:
+      ansible_host: {{ worker.network_interface.0.nat_ip_address }}
+      ip: {{ worker.network_interface.0.nat_ip_address }}
+      access_ip: {{ worker.network_interface.0.nat_ip_address }}
+    {% endfor %}
+  children:
+    kube_control_plane:
+      hosts:
+        {% for i, master in masters %}
+        k8s-master-{{ i }}:
+        {% endfor %}
+    kube_node:
+      hosts:
+        {% for i, worker in workers %}
+        k8s-worker-{{ i }}:
+        {% endfor %}
+    etcd:
+      hosts:
+        {% for i, master in masters %}
+        k8s-master-{{ i }}:
+        {% endfor %}
+    k8s_cluster:
+      children:
+        kube_control_plane:
+        kube_node:
+    calico_rr:
+      hosts: {}
+GitHub Actions Workflow
+Here's the updated GitHub Actions workflow to include the generation of the Ansible inventory file:
+
+
+name: Terraform Apply
+
+on:
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4.1.7
+
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v3.1.1
+      with:
+        terraform_version: v1.9.0
+
+    - name: Set up SSH keys
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
+        SERVICE_ACCOUNT_KEY_FILE: ${{ secrets.SERVICE_ACCOUNT_KEY_FILE }}
+      run: |
+        mkdir -p ~/.ssh
+        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+        echo "$SSH_PUBLIC_KEY" > ~/.ssh/id_ed25519.pub
+        chmod 600 ~/.ssh/id_ed25519.pub
+        echo "$SERVICE_ACCOUNT_KEY_FILE" > ~/.ssh/authorized_key.json
+        chmod 600 ~/.ssh/authorized_key.json
+
+    - name: Install necessary packages
+      run: |
+        sudo apt update -y
+        sudo apt install software-properties-common -y
+        sudo add-apt-repository ppa:deadsnakes/ppa
+        sudo apt update -y
+        sudo apt install python3.12-venv -y
+        python3.12 -m venv venv
+        source venv/bin/activate
+        git clone https://github.com/kubernetes-sigs/kubespray
+        cd kubespray/
+        pip3 install -r requirements.txt
+        pip3 install ruamel.yaml
+        cp -rfp inventory/sample inventory/mycluster
+
+    - name: Initialize Terraform
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: terraform init
+
+    - name: Apply Terraform
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: terraform apply -auto-approve
+
+    - name: Generate Ansible Inventory
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: |
+        terraform output -json > terraform_output.json
+        python3 - <<EOF
+        import json
+        from jinja2 import Template
+
+        with open('terraform_output.json') as f:
+            output = json.load(f)
+
+        masters = output['k8s-master']['value']
+        workers = output['k8s-worker']['value']
+
+        with open('templates/hosts.yaml.tpl') as f:
+            template = Template(f.read())
+
+        rendered_inventory = template.render(masters=masters, workers=workers)
+
+        with open('inventory/mycluster/hosts.yaml', 'w') as f:
+            f.write(rendered_inventory)
+        EOF
+
+    - name: Display Inventory Directory Contents
+      run: ls -la inventory/mycluster/
+
+    - name: Display Ansible Inventory
+      run: cat inventory/mycluster/hosts.yaml
+
+    - name: Run Ansible Playbook
+      run: |
+        source venv/bin/activate
+        cd kubespray/
+        ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -v
+
+    - name: Clean up on failure
+      if: failure()
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: terraform destroy -auto-approve
+
+    - name: Display Success Message
+      if: success()
+      run: echo "ВСЕ НОРМАЛЬНО"
+
+    - name: Destroy Infrastructure
+      if: always()
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: terraform destroy -auto-approve
+
+    - name: Clean up SSH keys
+      if: always()
+      run: |
+        rm -f ~/.ssh/id_ed25519
+        rm -f ~/.ssh/id_ed25519.pub
+        rm -f ~/.ssh/authorized_key.json
+This workflow ensures that the Ansible inventory file is dynamically generated based on the Terraform output and that the necessary packages and dependencies are installed and configured correctly.
+
+variable "yc_cloud_id" {
+  description = "Идентификатор облака Yandex"
+}
+
+variable "yc_folder_id" {
+  description = "Идентификатор папки Yandex"
+}
+
+variable "yc_zone" {
+  description = "Зона Yandex Cloud"
+  default     = "ru-central1-a"
+}
+
+variable "yc_service_account_id" {
+  description = "Идентификатор сервисного аккаунта"
+}
+
+variable "ssh_public_key" {
+  description = "SSH public key for accessing the instances"
+  type        = string
+}
+
+Your Terraform variables are well-defined, but to ensure completeness and clarity, let's review and potentially enhance them. Here are the variables you've defined, along with some additional suggestions:
+
+Variables Definition
+
+variable "yc_cloud_id" {
+  description = "Идентификатор облака Yandex"
+  type        = string
+}
+
+variable "yc_folder_id" {
+  description = "Идентификатор папки Yandex"
+  type        = string
+}
+
+variable "yc_zone" {
+  description = "Зона Yandex Cloud"
+  type        = string
+  default     = "ru-central1-a"
+}
+
+variable "yc_service_account_id" {
+  description = "Идентификатор сервисного аккаунта"
+  type        = string
+}
+
+variable "ssh_public_key" {
+  description = "SSH public key for accessing the instances"
+  type        = string
+}
+Additional Suggestions
+Master and Worker Counts:
+
+Add variables to define the number of master and worker nodes.
+Instance Types and Sizes:
+
+Add variables to define the instance types and sizes for better flexibility.
+Image ID:
+
+Add a variable for the image ID to make it easier to change the base image.
+Here's an enhanced version of your variables definition:
+
+
+variable "yc_cloud_id" {
+  description = "Идентификатор облака Yandex"
+  type        = string
+}
+
+variable "yc_folder_id" {
+  description = "Идентификатор папки Yandex"
+  type        = string
+}
+
+variable "yc_zone" {
+  description = "Зона Yandex Cloud"
+  type        = string
+  default     = "ru-central1-a"
+}
+
+variable "yc_service_account_id" {
+  description = "Идентификатор сервисного аккаунта"
+  type        = string
+}
+
+variable "ssh_public_key" {
+  description = "SSH public key for accessing the instances"
+  type        = string
+}
+
+variable "master_count" {
+  description = "Number of master nodes"
+  type        = number
+  default     = 1
+}
+
+variable "worker_count" {
+  description = "Number of worker nodes"
+  type        = number
+  default     = 1
+}
+
+variable "instance_type" {
+  description = "Type of the instance"
+  type        = string
+  default     = "standard-v2"
+}
+
+variable "instance_cores" {
+  description = "Number of cores for the instance"
+  type        = number
+  default     = 2
+}
+
+variable "instance_memory" {
+  description = "Amount of memory for the instance"
+  type        = number
+  default     = 4
+}
+
+variable "instance_core_fraction" {
+  description = "Core fraction for the instance"
+  type        = number
+  default     = 5
+}
+
+variable "instance_image_id" {
+  description = "Image ID for the instance"
+  type        = string
+  default     = "fd8k2vlv3b3duv812ama"
+}
+
+variable "instance_disk_size" {
+  description = "Size of the boot disk"
+  type        = number
+  default     = 10
+}
+Updated Terraform Configuration
+Here's how you can update your Terraform configuration to use these variables:
+
+
+// Создание виртуальных машин для мастер-узлов
+resource "yandex_compute_instance" "k8s-master" {
+  count       = var.master_count
+  name        = "k8s-master-${count.index}"
+  platform_id = var.instance_type
+  zone        = element(["ru-central1-a", "ru-central1-b", "ru-central1-d"], count.index)
+  resources {
+    cores         = var.instance_cores
+    memory        = var.instance_memory
+    core_fraction = var.instance_core_fraction
+  }
+  boot_disk {
+    initialize_params {
+      image_id = var.instance_image_id
+      type     = "network-hdd"
+      size     = var.instance_disk_size
+    }
+  }
+  network_interface {
+    subnet_id = element([yandex_vpc_subnet.master-subnet-a.id, yandex_vpc_subnet.master-subnet-b.id, yandex_vpc_subnet.master-subnet-d.id], count.index)
+    nat       = true
+  }
+  scheduling_policy {
+    preemptible = true
+  }
+  metadata = {
+    ssh-keys = "ubuntu:${var.ssh_public_key}"
+  }
+  service_account_id = var.yc_service_account_id
+
+  provisioner "file" {
+    source      = "~/.ssh/id_ed25519"
+    destination = "/home/ubuntu/.ssh/id_ed25519"
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      host        = self.network_interface.0.nat_ip_address
+      private_key = file("~/.ssh/id_ed25519")
+    }
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "chmod 600 /home/ubuntu/.ssh/id_ed25519"
+    ]
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      host        = self.network_interface.0.nat_ip_address
+      private_key = file("~/.ssh/id_ed25519")
+    }
+  }
+}
+
+// Создание виртуальных машин для воркер-узлов
+resource "yandex_compute_instance" "k8s-worker" {
+  count       = var.worker_count
+  name        = "k8s-worker-${count.index}"
+  platform_id = var.instance_type
+  zone        = element(["ru-central1-a", "ru-central1-b", "ru-central1-d"], count.index % 3)
+  resources {
+    cores         = var.instance_cores
+    memory        = var.instance_memory
+    core_fraction = var.instance_core_fraction
+  }
+  boot_disk {
+    initialize_params {
+      image_id = var.instance_image_id
+      type     = "network-hdd"
+      size     = var.instance_disk_size
+    }
+  }
+  network_interface {
+    subnet_id = element([yandex_vpc_subnet.worker-subnet-a.id, yandex_vpc_subnet.worker-subnet-b.id, yandex_vpc_subnet.worker-subnet-d.id], count.index % 3)
+    nat       = true
+  }
+  scheduling_policy {
+    preemptible = true
+  }
+  metadata = {
+    ssh-keys = "ubuntu:${var.ssh_public_key}"
+  }
+  service_account_id = var.yc_service_account_id
+
+  provisioner "file" {
+    source      = "~/.ssh/id_ed25519"
+    destination = "/home/ubuntu/.ssh/id_ed25519"
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      host        = self.network_interface.0.nat_ip_address
+      private_key = file("~/.ssh/id_ed25519")
+    }
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "chmod 600 /home/ubuntu/.ssh/id_ed25519"
+    ]
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      host        = self.network_interface.0.nat_ip_address
+      private_key = file("~/.ssh/id_ed25519")
+    }
+  }
+}
+
+resource "local_file" "ansible_inventory" {
+  content = templatefile("${path.module}/templates/hosts.yaml.tpl", {
+    masters = yandex_compute_instance.k8s-master
+    workers = yandex_compute_instance.k8s-worker
+  })
+  filename = "${path.module}/inventory/mycluster/hosts.yaml"
+}
+GitHub Actions Workflow
+Here's the updated GitHub Actions workflow to include the generation of the Ansible inventory file:
+
+
+name: Terraform Apply
+
+on:
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4.1.7
+
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v3.1.1
+      with:
+        terraform_version: v1.9.0
+
+    - name: Set up SSH keys
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
+        SERVICE_ACCOUNT_KEY_FILE: ${{ secrets.SERVICE_ACCOUNT_KEY_FILE }}
+      run: |
+        mkdir -p ~/.ssh
+        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+        echo "$SSH_PUBLIC_KEY" > ~/.ssh/id_ed25519.pub
+        chmod 600 ~/.ssh/id_ed25519.pub
+        echo "$SERVICE_ACCOUNT_KEY_FILE" > ~/.ssh/authorized_key.json
+        chmod 600 ~/.ssh/authorized_key.json
+
+    - name: Install necessary packages
+      run: |
+        sudo apt update -y
+        sudo apt install software-properties-common -y
+        sudo add-apt-repository ppa:deadsnakes/ppa
+        sudo apt update -y
+        sudo apt install python3.12-venv -y
+        python3.12 -m venv venv
+        source venv/bin/activate
+        git clone https://github.com/kubernetes-sigs/kubespray
+        cd kubespray/
+        pip3 install -r requirements.txt
+        pip3 install ruamel.yaml
+        cp -rfp inventory/sample inventory/mycluster
+
+    - name: Initialize Terraform
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: terraform init
+
+    - name: Apply Terraform
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: terraform apply -auto-approve
+
+    - name: Generate Ansible Inventory
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: |
+        terraform output -json > terraform_output.json
+        python3 - <<EOF
+        import json
+        from jinja2 import Template
+
+        with open('terraform_output.json') as f:
+            output = json.load(f)
+
+        masters = output['k8s-master']['value']
+        workers = output['k8s-worker']['value']
+
+        with open('templates/hosts.yaml.tpl') as f:
+            template = Template(f.read())
+
+        rendered_inventory = template.render(masters=masters, workers=workers)
+
+        with open('inventory/mycluster/hosts.yaml', 'w') as f:
+            f.write(rendered_inventory)
+        EOF
+
+    - name: Display Inventory Directory Contents
+      run: ls -la inventory/mycluster/
+
+    - name: Display Ansible Inventory
+      run: cat inventory/mycluster/hosts.yaml
+
+    - name: Run Ansible Playbook
+      run: |
+        source venv/bin/activate
+        cd kubespray/
+        ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -v
+
+    - name: Clean up on failure
+      if: failure()
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: terraform destroy -auto-approve
+
+    - name: Display Success Message
+      if: success()
+      run: echo "ВСЕ НОРМАЛЬНО"
+
+    - name: Destroy Infrastructure
+      if: always()
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: terraform destroy -auto-approve
+
+    - name: Clean up SSH keys
+      if: always()
+      run: |
+        rm -f ~/.ssh/id_ed25519
+        rm -f ~/.ssh/id_ed25519.pub
+        rm -f ~/.ssh/authorized_key.json
+This workflow ensures that the Ansible inventory file is dynamically generated based on the Terraform output and that the necessary packages and dependencies are installed and configured correctly.
+
+// Создание сети для мастер-узлов
+resource "yandex_vpc_network" "master-network" {
+  name = "master-network"
+}
+
+// Создание подсети для мастер-узлов в зоне ru-central1-a
+resource "yandex_vpc_subnet" "master-subnet-a" {
+  name           = "master-subnet-a"
+  zone           = "ru-central1-a"
+  network_id     = yandex_vpc_network.master-network.id
+  v4_cidr_blocks = ["10.1.1.0/24"]
+}
+
+// Создание подсети для мастер-узлов в зоне ru-central1-b
+resource "yandex_vpc_subnet" "master-subnet-b" {
+  name           = "master-subnet-b"
+  zone           = "ru-central1-b"
+  network_id     = yandex_vpc_network.master-network.id
+  v4_cidr_blocks = ["10.1.2.0/24"]
+}
+
+// Создание подсети для мастер-узлов в зоне ru-central1-d
+resource "yandex_vpc_subnet" "master-subnet-d" {
+  name           = "master-subnet-d"
+  zone           = "ru-central1-d"
+  network_id     = yandex_vpc_network.master-network.id
+  v4_cidr_blocks = ["10.1.3.0/24"]
+}
+
+// Создание сети для воркер-узлов
+resource "yandex_vpc_network" "worker-network" {
+  name = "worker-network"
+}
+
+// Создание подсети для воркер-узлов в зоне ru-central1-a
+resource "yandex_vpc_subnet" "worker-subnet-a" {
+  name           = "worker-subnet-a"
+  zone           = "ru-central1-a"
+  network_id     = yandex_vpc_network.worker-network.id
+  v4_cidr_blocks = ["10.2.1.0/24"]
+}
+
+// Создание подсети для воркер-узлов в зоне ru-central1-b
+resource "yandex_vpc_subnet" "worker-subnet-b" {
+  name           = "worker-subnet-b"
+  zone           = "ru-central1-b"
+  network_id     = yandex_vpc_network.worker-network.id
+  v4_cidr_blocks = ["10.2.2.0/24"]
+}
+
+// Создание подсети для воркер-узлов в зоне ru-central1-d
+resource "yandex_vpc_subnet" "worker-subnet-d" {
+  name           = "worker-subnet-d"
+  zone           = "ru-central1-d"
+  network_id     = yandex_vpc_network.worker-network.id
+  v4_cidr_blocks = ["10.2.3.0/24"]
+}
+
+Your Terraform configuration for creating networks and subnets for master and worker nodes is well-structured. Here's a breakdown of your configuration and some suggestions for improvement:
+
+Breakdown of the Configuration
+Master Network and Subnets:
+
+Creates a VPC network for master nodes.
+Creates subnets in three different zones (ru-central1-a, ru-central1-b, ru-central1-d) within the master network.
+Worker Network and Subnets:
+
+Creates a VPC network for worker nodes.
+Creates subnets in three different zones (ru-central1-a, ru-central1-b, ru-central1-d) within the worker network.
+Suggestions for Improvement
+Dynamic Subnet Creation:
+
+Instead of hardcoding the subnet CIDR blocks, you can use variables to make the configuration more flexible.
+Reusable Modules:
+
+Consider creating reusable modules for networks and subnets to avoid repetition and make the configuration more modular.
+Error Handling:
+
+Add error handling and validation for the network and subnet configurations.
+Here's an enhanced version of your Terraform configuration with dynamic subnet creation and reusable modules:
+
+Variables Definition
+
+variable "yc_cloud_id" {
+  description = "Идентификатор облака Yandex"
+  type        = string
+}
+
+variable "yc_folder_id" {
+  description = "Идентификатор папки Yandex"
+  type        = string
+}
+
+variable "yc_zone" {
+  description = "Зона Yandex Cloud"
+  type        = string
+  default     = "ru-central1-a"
+}
+
+variable "yc_service_account_id" {
+  description = "Идентификатор сервисного аккаунта"
+  type        = string
+}
+
+variable "ssh_public_key" {
+  description = "SSH public key for accessing the instances"
+  type        = string
+}
+
+variable "master_count" {
+  description = "Number of master nodes"
+  type        = number
+  default     = 1
+}
+
+variable "worker_count" {
+  description = "Number of worker nodes"
+  type        = number
+  default     = 1
+}
+
+variable "instance_type" {
+  description = "Type of the instance"
+  type        = string
+  default     = "standard-v2"
+}
+
+variable "instance_cores" {
+  description = "Number of cores for the instance"
+  type        = number
+  default     = 2
+}
+
+variable "instance_memory" {
+  description = "Amount of memory for the instance"
+  type        = number
+  default     = 4
+}
+
+variable "instance_core_fraction" {
+  description = "Core fraction for the instance"
+  type        = number
+  default     = 5
+}
+
+variable "instance_image_id" {
+  description = "Image ID for the instance"
+  type        = string
+  default     = "fd8k2vlv3b3duv812ama"
+}
+
+variable "instance_disk_size" {
+  description = "Size of the boot disk"
+  type        = number
+  default     = 10
+}
+
+variable "master_subnet_cidr_blocks" {
+  description = "CIDR blocks for master subnets"
+  type        = list(string)
+  default     = ["10.1.1.0/24", "10.1.2.0/24", "10.1.3.0/24"]
+}
+
+variable "worker_subnet_cidr_blocks" {
+  description = "CIDR blocks for worker subnets"
+  type        = list(string)
+  default     = ["10.2.1.0/24", "10.2.2.0/24", "10.2.3.0/24"]
+}
+Network and Subnet Configuration
+
+// Создание сети для мастер-узлов
+resource "yandex_vpc_network" "master-network" {
+  name = "master-network"
+}
+
+// Создание подсети для мастер-узлов в зоне ru-central1-a
+resource "yandex_vpc_subnet" "master-subnet-a" {
+  name           = "master-subnet-a"
+  zone           = "ru-central1-a"
+  network_id     = yandex_vpc_network.master-network.id
+  v4_cidr_blocks = [element(var.master_subnet_cidr_blocks, 0)]
+}
+
+// Создание подсети для мастер-узлов в зоне ru-central1-b
+resource "yandex_vpc_subnet" "master-subnet-b" {
+  name           = "master-subnet-b"
+  zone           = "ru-central1-b"
+  network_id     = yandex_vpc_network.master-network.id
+  v4_cidr_blocks = [element(var.master_subnet_cidr_blocks, 1)]
+}
+
+// Создание подсети для мастер-узлов в зоне ru-central1-d
+resource "yandex_vpc_subnet" "master-subnet-d" {
+  name           = "master-subnet-d"
+  zone           = "ru-central1-d"
+  network_id     = yandex_vpc_network.master-network.id
+  v4_cidr_blocks = [element(var.master_subnet_cidr_blocks, 2)]
+}
+
+// Создание сети для воркер-узлов
+resource "yandex_vpc_network" "worker-network" {
+  name = "worker-network"
+}
+
+// Создание подсети для воркер-узлов в зоне ru-central1-a
+resource "yandex_vpc_subnet" "worker-subnet-a" {
+  name           = "worker-subnet-a"
+  zone           = "ru-central1-a"
+  network_id     = yandex_vpc_network.worker-network.id
+  v4_cidr_blocks = [element(var.worker_subnet_cidr_blocks, 0)]
+}
+
+// Создание подсети для воркер-узлов в зоне ru-central1-b
+resource "yandex_vpc_subnet" "worker-subnet-b" {
+  name           = "worker-subnet-b"
+  zone           = "ru-central1-b"
+  network_id     = yandex_vpc_network.worker-network.id
+  v4_cidr_blocks = [element(var.worker_subnet_cidr_blocks, 1)]
+}
+
+// Создание подсети для воркер-узлов в зоне ru-central1-d
+resource "yandex_vpc_subnet" "worker-subnet-d" {
+  name           = "worker-subnet-d"
+  zone           = "ru-central1-d"
+  network_id     = yandex_vpc_network.worker-network.id
+  v4_cidr_blocks = [element(var.worker_subnet_cidr_blocks, 2)]
+}
+Instance Configuration
+
+// Создание виртуальных машин для мастер-узлов
+resource "yandex_compute_instance" "k8s-master" {
+  count       = var.master_count
+  name        = "k8s-master-${count.index}"
+  platform_id = var.instance_type
+  zone        = element(["ru-central1-a", "ru-central1-b", "ru-central1-d"], count.index)
+  resources {
+    cores         = var.instance_cores
+    memory        = var.instance_memory
+    core_fraction = var.instance_core_fraction
+  }
+  boot_disk {
+    initialize_params {
+      image_id = var.instance_image_id
+      type     = "network-hdd"
+      size     = var.instance_disk_size
+    }
+  }
+  network_interface {
+    subnet_id = element([yandex_vpc_subnet.master-subnet-a.id, yandex_vpc_subnet.master-subnet-b.id, yandex_vpc_subnet.master-subnet-d.id], count.index)
+    nat       = true
+  }
+  scheduling_policy {
+    preemptible = true
+  }
+  metadata = {
+    ssh-keys = "ubuntu:${var.ssh_public_key}"
+  }
+  service_account_id = var.yc_service_account_id
+
+  provisioner "file" {
+    source      = "~/.ssh/id_ed25519"
+    destination = "/home/ubuntu/.ssh/id_ed25519"
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      host        = self.network_interface.0.nat_ip_address
+      private_key = file("~/.ssh/id_ed25519")
+    }
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "chmod 600 /home/ubuntu/.ssh/id_ed25519"
+    ]
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      host        = self.network_interface.0.nat_ip_address
+      private_key = file("~/.ssh/id_ed25519")
+    }
+  }
+}
+
+// Создание виртуальных машин для воркер-узлов
+resource "yandex_compute_instance" "k8s-worker" {
+  count       = var.worker_count
+  name        = "k8s-worker-${count.index}"
+  platform_id = var.instance_type
+  zone        = element(["ru-central1-a", "ru-central1-b", "ru-central1-d"], count.index % 3)
+  resources {
+    cores         = var.instance_cores
+    memory        = var.instance_memory
+    core_fraction = var.instance_core_fraction
+  }
+  boot_disk {
+    initialize_params {
+      image_id = var.instance_image_id
+      type     = "network-hdd"
+      size     = var.instance_disk_size
+    }
+  }
+  network_interface {
+    subnet_id = element([yandex_vpc_subnet.worker-subnet-a.id, yandex_vpc_subnet.worker-subnet-b.id, yandex_vpc_subnet.worker-subnet-d.id], count.index % 3)
+    nat       = true
+  }
+  scheduling_policy {
+    preemptible = true
+  }
+  metadata = {
+    ssh-keys = "ubuntu:${var.ssh_public_key}"
+  }
+  service_account_id = var.yc_service_account_id
+
+  provisioner "file" {
+    source      = "~/.ssh/id_ed25519"
+    destination = "/home/ubuntu/.ssh/id_ed25519"
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      host        = self.network_interface.0.nat_ip_address
+      private_key = file("~/.ssh/id_ed25519")
+    }
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "chmod 600 /home/ubuntu/.ssh/id_ed25519"
+    ]
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      host        = self.network_interface.0.nat_ip_address
+      private_key = file("~/.ssh/id_ed25519")
+    }
+  }
+}
+
+resource "local_file" "ansible_inventory" {
+  content = templatefile("${path.module}/templates/hosts.yaml.tpl", {
+    masters = yandex_compute_instance.k8s-master
+    workers = yandex_compute_instance.k8s-worker
+  })
+  filename = "${path.module}/inventory/mycluster/hosts.yaml"
+}
+GitHub Actions Workflow
+Here's the updated GitHub Actions workflow to include the generation of the Ansible inventory file:
+
+
+name: Terraform Apply
+
+on:
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4.1.7
+
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v3.1.1
+      with:
+        terraform_version: v1.9.0
+
+    - name: Set up SSH keys
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
+        SERVICE_ACCOUNT_KEY_FILE: ${{ secrets.SERVICE_ACCOUNT_KEY_FILE }}
+      run: |
+        mkdir -p ~/.ssh
+        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+        echo "$SSH_PUBLIC_KEY" > ~/.ssh/id_ed25519.pub
+        chmod 600 ~/.ssh/id_ed25519.pub
+        echo "$SERVICE_ACCOUNT_KEY_FILE" > ~/.ssh/authorized_key.json
+        chmod 600 ~/.ssh/authorized_key.json
+
+    - name: Install necessary packages
+      run: |
+        sudo apt update -y
+        sudo apt install software-properties-common -y
+        sudo add-apt-repository ppa:deadsnakes/ppa
+        sudo apt update -y
+        sudo apt install python3.12-venv -y
+        python3.12 -m venv venv
+        source venv/bin/activate
+        git clone https://github.com/kubernetes-sigs/kubespray
+        cd kubespray/
+        pip3 install -r requirements.txt
+        pip3 install ruamel.yaml
+        cp -rfp inventory/sample inventory/mycluster
+
+    - name: Initialize Terraform
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: terraform init
+
+    - name: Apply Terraform
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: terraform apply -auto-approve
+
+    - name: Generate Ansible Inventory
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: |
+        terraform output -json > terraform_output.json
+        python3 - <<EOF
+        import json
+        from jinja2 import Template
+
+        with open('terraform_output.json') as f:
+            output = json.load(f)
+
+        masters = output['k8s-master']['value']
+        workers = output['k8s-worker']['value']
+
+        with open('templates/hosts.yaml.tpl') as f:
+            template = Template(f.read())
+
+        rendered_inventory = template.render(masters=masters, workers=workers)
+
+        with open('inventory/mycluster/hosts.yaml', 'w') as f:
+            f.write(rendered_inventory)
+        EOF
+
+    - name: Display Inventory Directory Contents
+      run: ls -la inventory/mycluster/
+
+    - name: Display Ansible Inventory
+      run: cat inventory/mycluster/hosts.yaml
+
+    - name: Run Ansible Playbook
+      run: |
+        source venv/bin/activate
+        cd kubespray/
+        ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -v
+
+    - name: Clean up on failure
+      if: failure()
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: terraform destroy -auto-approve
+
+    - name: Display Success Message
+      if: success()
+      run: echo "ВСЕ НОРМАЛЬНО"
+
+    - name: Destroy Infrastructure
+      if: always()
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: terraform destroy -auto-approve
+
+    - name: Clean up SSH keys
+      if: always()
+      run: |
+        rm -f ~/.ssh/id_ed25519
+        rm -f ~/.ssh/id_ed25519.pub
+        rm -f ~/.ssh/authorized_key.json
+This workflow ensures that the Ansible inventory file is dynamically generated based on the Terraform output and that the necessary packages and dependencies are installed and configured correctly.
+
+после создания файла hosts.yml нужно строчку hosts: *** поменять на hosts: {}
+
+To modify the hosts.yaml file after it is generated, you can use a script to replace the specific line hosts: *** with hosts: {}. This can be done using a simple Python script or a shell command within your GitHub Actions workflow.
+
+Here's how you can update your GitHub Actions workflow to include this step:
+
+Updated GitHub Actions Workflow
+
+name: Terraform Apply
+
+on:
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4.1.7
+
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v3.1.1
+      with:
+        terraform_version: v1.9.0
+
+    - name: Set up SSH keys
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
+        SERVICE_ACCOUNT_KEY_FILE: ${{ secrets.SERVICE_ACCOUNT_KEY_FILE }}
+      run: |
+        mkdir -p ~/.ssh
+        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+        echo "$SSH_PUBLIC_KEY" > ~/.ssh/id_ed25519.pub
+        chmod 600 ~/.ssh/id_ed25519.pub
+        echo "$SERVICE_ACCOUNT_KEY_FILE" > ~/.ssh/authorized_key.json
+        chmod 600 ~/.ssh/authorized_key.json
+
+    - name: Install necessary packages
+      run: |
+        sudo apt update -y
+        sudo apt install software-properties-common -y
+        sudo add-apt-repository ppa:deadsnakes/ppa
+        sudo apt update -y
+        sudo apt install python3.12-venv -y
+        python3.12 -m venv venv
+        source venv/bin/activate
+        git clone https://github.com/kubernetes-sigs/kubespray
+        cd kubespray/
+        pip3 install -r requirements.txt
+        pip3 install ruamel.yaml
+        cp -rfp inventory/sample inventory/mycluster
+
+    - name: Initialize Terraform
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: terraform init
+
+    - name: Apply Terraform
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: terraform apply -auto-approve
+
+    - name: Generate Ansible Inventory
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: |
+        terraform output -json > terraform_output.json
+        python3 - <<EOF
+        import json
+        from jinja2 import Template
+
+        with open('terraform_output.json') as f:
+            output = json.load(f)
+
+        masters = output['k8s-master']['value']
+        workers = output['k8s-worker']['value']
+
+        with open('templates/hosts.yaml.tpl') as f:
+            template = Template(f.read())
+
+        rendered_inventory = template.render(masters=masters, workers=workers)
+
+        with open('inventory/mycluster/hosts.yaml', 'w') as f:
+            f.write(rendered_inventory)
+        EOF
+
+    - name: Modify Ansible Inventory
+      run: |
+        sed -i 's/hosts: \*\*\*/hosts: {}/' inventory/mycluster/hosts.yaml
+
+    - name: Display Inventory Directory Contents
+      run: ls -la inventory/mycluster/
+
+    - name: Display Ansible Inventory
+      run: cat inventory/mycluster/hosts.yaml
+
+    - name: Run Ansible Playbook
+      run: |
+        source venv/bin/activate
+        cd kubespray/
+        ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -v
+
+    - name: Clean up on failure
+      if: failure()
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: terraform destroy -auto-approve
+
+    - name: Display Success Message
+      if: success()
+      run: echo "ВСЕ НОРМАЛЬНО"
+
+    - name: Destroy Infrastructure
+      if: always()
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+      run: terraform destroy -auto-approve
+
+    - name: Clean up SSH keys
+      if: always()
+      run: |
+        rm -f ~/.ssh/id_ed25519
+        rm -f ~/.ssh/id_ed25519.pub
+        rm -f ~/.ssh/authorized_key.json
+Explanation
+Generate Ansible Inventory:
+
+This step generates the Ansible inventory file using a Jinja2 template and the Terraform output.
+Modify Ansible Inventory:
+
+This step uses the sed command to replace the line hosts: *** with hosts: {} in the generated hosts.yaml file.
+Display Inventory Directory Contents:
+
+This step lists the contents of the inventory directory to verify that the file has been generated correctly.
+Display Ansible Inventory:
+
+This step displays the contents of the hosts.yaml file to verify that the modification has been applied correctly.
+Run Ansible Playbook:
+
+This step runs the Ansible playbook using the modified inventory file.
+By adding the Modify Ansible Inventory step, you ensure that the hosts.yaml file is updated as required before running the Ansible playbook.
