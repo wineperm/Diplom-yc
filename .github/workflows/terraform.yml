@@ -52,6 +52,26 @@ jobs:
         TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
       run: terraform apply -auto-approve
 
+    - name: Install jq
+      run: sudo apt-get install -y jq
+
+    - name: Copy SSH key to all hosts
+      run: |
+        #!/bin/bash
+
+        # Получаем IP-адреса мастеров и воркеров из Terraform вывода
+        MASTER_IPS=$(terraform output -json master_ips | jq -r '.[]')
+        WORKER_IPS=$(terraform output -json worker_ips | jq -r '.[]')
+
+        # Объединяем IP-адреса мастеров и воркеров в один массив
+        ALL_IPS=($MASTER_IPS $WORKER_IPS)
+
+        # Копируем приватный SSH-ключ на все хосты
+        for IP in "${ALL_IPS[@]}"; do
+          scp ~/.ssh/id_ed25519 ubuntu@$IP:~/.ssh/
+          ssh ubuntu@$IP "sudo chmod 600 ~/.ssh/id_ed25519"
+        done
+
     - name: Set up Python
       uses: actions/setup-python@v5.1.1
       with:
