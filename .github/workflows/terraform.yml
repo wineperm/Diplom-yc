@@ -47,46 +47,76 @@ jobs:
         TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
       run: terraform apply -auto-approve
 
-    - name: Install necessary packages
-      run: |
-         sudo apt-get update -y
-         sudo apt install software-properties-common
-         sudo add-apt-repository ppa:deadsnakes/ppa -y
-         sudo apt-get update -y
-         sudo apt-get install git pip python3.11 -y
-         sudo -i
-         curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-         python3.11 get-pip.py
-         exit
+ #   - name: Install necessary packages
+ #     run: |
+ #        sudo apt-get update -y
+ #        sudo apt install software-properties-common
+ #        sudo add-apt-repository ppa:deadsnakes/ppa -y
+ #        sudo apt-get update -y
+ #        sudo apt-get install git pip python3.11 -y
+ #        sudo -i
+ #        curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+ #        python3.11 get-pip.py
+ #        exit
 
-         git clone https://github.com/kubernetes-sigs/kubespray.git
-         cd kubespray
-         rsync -av kubespray/ /home/runner/work/Diplom-yc/Diplom-yc/
-         pip3.11 install -r requirements.txt
-         python3.11 -m pip install ruamel.yaml
-         cp -rfp inventory/sample inventory/mycluster
+ #        git clone https://github.com/kubernetes-sigs/kubespray.git
+ #        cd kubespray
+ #        rsync -av kubespray/ /home/runner/work/Diplom-yc/Diplom-yc/
+ #        pip3.11 install -r requirements.txt
+ #        python3.11 -m pip install ruamel.yaml
+ #        cp -rfp inventory/sample inventory/mycluster
 
-    - name: Generate Ansible Inventory
-      env:
-        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
-        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
-        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
-        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
-        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
-      run: terraform apply -auto-approve
+ #   - name: Generate Ansible Inventory
+ #     env:
+ #       TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+ #       TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+ #       TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+ #       TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+ #       TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+ #     run: terraform apply -auto-approve
 
-    - name: Display Inventory Directory Contents
-      run: |
-        ls -la inventory/mycluster/
-        ls -la kubespray/
-        ls -la 
-        pwd
+ #   - name: Display Inventory Directory Contents
+ #     run: |
+ #       ls -la inventory/mycluster/
+ #       ls -la kubespray/
+ #       ls -la 
+ #       pwd
         
+ #   - name: Display Ansible Inventory
+ #     run: cat inventory/mycluster/hosts.yaml
+
+ #   - name: Run Ansible Playbook
+ #     run: ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -v
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y python3-pip
+        pip3 install -r https://raw.githubusercontent.com/kubernetes-sigs/kubespray/master/requirements.txt
+
+    - name: Clone Kubespray repository
+      run: |
+        git clone https://github.com/kubernetes-sigs/kubespray.git
+        cd kubespray
+        pip3 install -r requirements.txt
+
+    - name: Configure Kubespray
+      run: |
+        cp -rfp kubespray/inventory/sample kubespray/inventory/mycluster
+        CONFIG_FILE=kubespray/inventory/mycluster/hosts.yaml python3 kubespray/contrib/inventory_builder/inventory.py $(terraform output -raw master_ips) $(terraform output -raw worker_ips)
+ 
     - name: Display Ansible Inventory
       run: cat inventory/mycluster/hosts.yaml
 
-    - name: Run Ansible Playbook
-      run: ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -v
+    - name: Deploy Kubernetes cluster
+      run: |
+        cd kubespray
+        ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -v
+
 
     - name: Clean up on failure
       if: failure()
