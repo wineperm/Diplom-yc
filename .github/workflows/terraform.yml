@@ -75,10 +75,7 @@ jobs:
       run: cat inventory/mycluster/hosts.yaml
 
     - name: Run Ansible Playbook
-      run: |
-        source venv/bin/activate
-        cd kubespray/
-        ansible-playbook -i /home/runner/work/Diplom-yc/Diplom-yc/kubespray/inventory/mycluster/hosts.yaml cluster.yml -b -vvv
+      run: ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -v
 
     - name: Clean up on failure
       if: failure()
