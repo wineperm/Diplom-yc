@@ -81,10 +81,15 @@ jobs:
       run: |
         sed -i 's/hosts: \*\*\*/hosts: {}/' inventory/mycluster/hosts.yaml
 
+    - name: Display Ansible Inventory
+      run: cat inventory/mycluster/hosts.yaml
+
     - name: Run Ansible Playbook
       run: |
         source venv/bin/activate
+        pwd
         cd kubespray/
+        pwd
         ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -v
 
     - name: Clean up on failure
