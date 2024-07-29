@@ -68,8 +68,8 @@ jobs:
 
         # Копируем приватный SSH-ключ на все хосты
         for IP in "${ALL_IPS[@]}"; do
-          scp ~/.ssh/id_ed25519 ubuntu@$IP:~/.ssh/
-          ssh ubuntu@$IP "sudo chmod 600 ~/.ssh/id_ed25519"
+          scp -o StrictHostKeyChecking=no ~/.ssh/id_ed25519 ubuntu@$IP:~/.ssh/
+          ssh -o StrictHostKeyChecking=no ubuntu@$IP "sudo chmod 600 ~/.ssh/id_ed25519"
         done
 
     - name: Set up Python
@@ -137,7 +137,7 @@ jobs:
                 kube_control_plane:
                 kube_node:
             calico_rr:
-              hosts: ***
+              hosts: {}
         ''')
 
         with open('kubespray/inventory/mycluster/hosts.yaml', 'w') as f:
@@ -160,7 +160,7 @@ jobs:
         ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -vvv
       shell: bash
       env:
-        TERRAFORM_CLI_PATH: /home/runner/work/_temp/098db6e0-f231-407d-8350-080ba8886615
+        TERRAFORM_CLI_PATH: /home/runner/work/_temp/11c42732-3efe-45f1-a0ef-1a6dad5542c7
         pythonLocation: /opt/hostedtoolcache/Python/3.12.4/x64
         PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.4/x64/lib/pkgconfig
         Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.4/x64
