@@ -1,33 +1,33 @@
 all:
   hosts:
-%{ for i, master in masters ~}
-    k8s-master-${i}:
-      ansible_host: ${master.network_interface.0.nat_ip_address}
-      ip: ${master.network_interface.0.nat_ip_address}
-      access_ip: ${master.network_interface.0.nat_ip_address}
-%{ endfor ~}
-%{ for i, worker in workers ~}
-    k8s-worker-${i}:
-      ansible_host: ${worker.network_interface.0.nat_ip_address}
-      ip: ${worker.network_interface.0.nat_ip_address}
-      access_ip: ${worker.network_interface.0.nat_ip_address}
-%{ endfor ~}
+    {% for master in masters %}
+    k8s-master-{{ loop.index }}:
+      ansible_host: {{ master }}
+      ip: {{ master }}
+      access_ip: {{ master }}
+    {% endfor %}
+    {% for worker in workers %}
+    k8s-worker-{{ loop.index }}:
+      ansible_host: {{ worker }}
+      ip: {{ worker }}
+      access_ip: {{ worker }}
+    {% endfor %}
   children:
     kube_control_plane:
       hosts:
-%{ for i, master in masters ~}
-        k8s-master-${i}:
-%{ endfor ~}
+        {% for master in masters %}
+        k8s-master-{{ loop.index }}:
+        {% endfor %}
     kube_node:
       hosts:
-%{ for i, worker in workers ~}
-        k8s-worker-${i}:
-%{ endfor ~}
+        {% for worker in workers %}
+        k8s-worker-{{ loop.index }}:
+        {% endfor %}
     etcd:
       hosts:
-%{ for i, master in masters ~}
-        k8s-master-${i}:
-%{ endfor ~}
+        {% for master in masters %}
+        k8s-master-{{ loop.index }}:
+        {% endfor %}
     k8s_cluster:
       children:
         kube_control_plane:
