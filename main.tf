@@ -29,7 +29,7 @@ resource "yandex_compute_instance" "k8s-master" {
 
   provisioner "file" {
     source      = "~/.ssh/id_ed25519"
-    destination = "/home/ubuntu/.ssh/id_ed25519"
+    destination = "~/.ssh/id_ed25519"
 
     connection {
       type        = "ssh"
@@ -41,7 +41,10 @@ resource "yandex_compute_instance" "k8s-master" {
 
   provisioner "remote-exec" {
     inline = [
-      "chmod 600 /home/ubuntu/.ssh/id_ed25519"
+      "chmod 600 ~/.ssh/id_ed25519",
+      "mkdir -p ~/.ssh",
+      "echo '${var.ssh_public_key}' >> ~/.ssh/authorized_keys",
+      "chmod 600 ~/.ssh/authorized_keys"
     ]
 
     connection {
@@ -84,7 +87,7 @@ resource "yandex_compute_instance" "k8s-worker" {
 
   provisioner "file" {
     source      = "~/.ssh/id_ed25519"
-    destination = "/home/ubuntu/.ssh/id_ed25519"
+    destination = "~/.ssh/id_ed25519"
 
     connection {
       type        = "ssh"
@@ -96,7 +99,10 @@ resource "yandex_compute_instance" "k8s-worker" {
 
   provisioner "remote-exec" {
     inline = [
-      "chmod 600 /home/ubuntu/.ssh/id_ed25519"
+      "chmod 600 ~/.ssh/id_ed25519",
+      "mkdir -p ~/.ssh",
+      "echo '${var.ssh_public_key}' >> ~/.ssh/authorized_keys",
+      "chmod 600 ~/.ssh/authorized_keys"
     ]
 
     connection {
