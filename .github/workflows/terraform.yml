@@ -138,6 +138,15 @@ jobs:
       run: |
         cd kubespray
         ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -vvv
+      shell: /usr/bin/bash -e ***0***
+      env:
+        TERRAFORM_CLI_PATH: /home/runner/work/_temp/098db6e0-f231-407d-8350-080ba8886615
+        pythonLocation: /opt/hostedtoolcache/Python/3.12.4/x64
+        PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.4/x64/lib/pkgconfig
+        Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.4/x64
+        Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.4/x64
+        Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.4/x64
+        LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.4/x64/lib
 
     - name: Clean up on failure
       if: failure()
