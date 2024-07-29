@@ -80,7 +80,7 @@ jobs:
       run: |
         ls -la inventory/mycluster/
         ls -la kubespray/
-        ls -la 
+        ls -la .gitmodules/
         pwd
         
     - name: Display Ansible Inventory
