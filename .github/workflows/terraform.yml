@@ -29,6 +29,11 @@ jobs:
         echo "$SERVICE_ACCOUNT_KEY_FILE" > ~/.ssh/authorized_key.json
         chmod 600 ~/.ssh/authorized_key.json
 
+    - name: Add SSH key to agent
+      run: |
+        eval "$(ssh-agent -s)"
+        ssh-add ~/.ssh/id_ed25519
+
     - name: Initialize Terraform
       env:
         TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
@@ -125,7 +130,7 @@ jobs:
     - name: Deploy Kubernetes cluster
       run: |
         cd kubespray
-        ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -vvv
+        ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -v
 
     - name: Clean up on failure
       if: failure()
