@@ -71,11 +71,17 @@ jobs:
         TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
       run: terraform apply -auto-approve
 
+    - name: Display Inventory Directory Contents
+      run: ls -la inventory/mycluster/
+
     - name: Display Ansible Inventory
       run: cat inventory/mycluster/hosts.yaml
 
     - name: Run Ansible Playbook
-      run: ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -v
+      run: |
+        source venv/bin/activate
+        cd kubespray/
+        ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -v
 
     - name: Clean up on failure
       if: failure()
