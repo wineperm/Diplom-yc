@@ -137,7 +137,7 @@ jobs:
                 kube_control_plane:
                 kube_node:
             calico_rr:
-              hosts: {}
+              hosts: ***
         ''')
 
         with open('kubespray/inventory/mycluster/hosts.yaml', 'w') as f:
