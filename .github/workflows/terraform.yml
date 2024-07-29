@@ -80,7 +80,6 @@ jobs:
       run: |
         ls -la inventory/mycluster/
         ls -la 
-        ls -la .gitmodules/
         ls -la /home/runner/work/Diplom-yc/
         ls -la /home/runner/work/Diplom-yc/Diplom-yc
         ls -la /home/runner/work/
