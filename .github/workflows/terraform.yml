@@ -80,6 +80,7 @@ jobs:
         ls -la inventory/mycluster/
         ls -la
         ls -la /home/runner/work/Diplom-yc/
+        ls -la /home/runner/work/Diplom-yc/Diplom-yc
         ls -la /home/runner/work/
         ls -la /home/runner/
         ls -la /home/
