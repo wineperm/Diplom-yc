@@ -73,8 +73,8 @@ jobs:
         import json
         from jinja2 import Template
 
-        masters = json.loads(json.dumps($MASTER_IPS))
-        workers = json.loads(json.dumps($WORKER_IPS))
+        masters = json.loads('$MASTER_IPS')
+        workers = json.loads('$WORKER_IPS')
 
         template = Template('''
         all:
@@ -125,7 +125,7 @@ jobs:
     - name: Deploy Kubernetes cluster
       run: |
         cd kubespray
-        ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -vvv
+        ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -v
 
     - name: Clean up on failure
       if: failure()
