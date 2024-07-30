@@ -70,6 +70,13 @@ jobs:
           nc -zv $host 22 || echo "SSH connection to $host failed"
         done
 
+    - name: Copy SSH key to the first master host
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      run: |
+        MASTER_IP=$(echo ${{ steps.get_master_ips.outputs.ips }} | awk '{print $1}')
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "mkdir -p ~/.ssh && echo \"$SSH_PRIVATE_KEY\" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519"
+
     - name: Clean up on failure
       if: failure()
       env:
