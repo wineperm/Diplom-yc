@@ -83,31 +83,49 @@ jobs:
         ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "cd kubespray && cp -rfp inventory/sample inventory/mycluster"
 
     - name: Generate Ansible inventory on the first master host
+      env:
+        HOSTS_YAML_TPL: |
+          all:
+            hosts:
+              {% for master in masters %}
+              node{{ loop.index }}:
+                ansible_host: {{ master }}
+                ip: {{ master }}
+                access_ip: {{ master }}
+              {% endfor %}
+              {% for worker in workers %}
+              node{{ loop.index + masters|length }}:
+                ansible_host: {{ worker }}
+                ip: {{ worker }}
+                access_ip: {{ worker }}
+              {% endfor %}
+            children:
+              kube_control_plane:
+                hosts:
+                  {% for master in masters %}
+                  node{{ loop.index }}:
+                  {% endfor %}
+              kube_node:
+                hosts:
+                  {% for worker in workers %}
+                  node{{ loop.index + masters|length }}:
+                  {% endfor %}
+              etcd:
+                hosts:
+                  {% for master in masters %}
+                  node{{ loop.index }}:
+                  {% endfor %}
+              k8s_cluster:
+                children:
+                  kube_control_plane:
+                  kube_node:
+              calico_rr:
+                hosts: {}
       run: |
         MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
         MASTER_IPS=$(terraform output -json master_ips | jq -r '.[]')
         WORKER_IPS=$(terraform output -json worker_ips | jq -r '.[]')
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "source ~/kubespray-env/bin/activate && cd kubespray && cat <<EOF > inventory/mycluster/hosts.yaml
-all:
-  hosts:
-$(for i in $(seq 1 $(echo "$MASTER_IPS $WORKER_IPS" | wc -w)); do echo "    node$i:"; echo "      ansible_host: $(echo "$MASTER_IPS $WORKER_IPS" | awk "NR==$i")"; echo "      ip: $(echo "$MASTER_IPS $WORKER_IPS" | awk "NR==$i")"; echo "      access_ip: $(echo "$MASTER_IPS $WORKER_IPS" | awk "NR==$i")"; done)
-  children:
-    kube_control_plane:
-      hosts:
-        node1:
-    kube_node:
-      hosts:
-$(for i in $(seq 2 $(echo "$WORKER_IPS" | wc -w | awk '{print $1+1}')); do echo "        node$i:"; done)
-    etcd:
-      hosts:
-        node1:
-    k8s_cluster:
-      children:
-        kube_control_plane:
-        kube_node:
-    calico_rr:
-        hosts: {}
-EOF"
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "source ~/kubespray-env/bin/activate && cd kubespray && echo '${{ env.HOSTS_YAML_TPL }}' | python3 -c 'import sys, yaml; print(yaml.dump(yaml.safe_load(sys.stdin), default_flow_style=False))' > inventory/mycluster/hosts.yaml"
 
     - name: Display Ansible Inventory
       run: |
