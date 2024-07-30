@@ -57,3 +57,12 @@ resource "yandex_compute_instance" "k8s-worker" {
   }
   service_account_id = var.yc_service_account_id
 }
+
+resource "local_file" "hosts_yaml" {
+  content = templatefile("${path.module}/hosts.yaml.tpl", {
+    master_ips = yandex_compute_instance.k8s-master[*].network_interface.0.nat_ip_address
+    worker_ips = yandex_compute_instance.k8s-worker[*].network_interface.0.nat_ip_address
+  })
+  filename = "${path.module}/hosts.yaml"
+}
+
