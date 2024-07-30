@@ -50,14 +50,25 @@ jobs:
       - name: Wait for SSH connectivity to masters and workers
         run: |
           MASTER_IPS=$(terraform output -json master_ips | jq -r '.[]')
-          WORKER_IPS=$(terraform output -json worker_ips | jq -r '.[]')
-          ALL_IPS="$MASTER_IPS $WORKER_IPS"
-          for host in $ALL_IPS; do
+          INTERNAL_MASTER_IPS=$(terraform output -json master_internal_ips | jq -r '.[]')
+          INTERNAL_WORKER_IPS=$(terraform output -json worker_internal_ips | jq -r '.[]')
+
+          # Check external IP for the first master
+          MASTER_IP=$(echo $MASTER_IPS | jq -r '.[0]')
+          while ! nc -zv $MASTER_IP 22; do
+            echo "Waiting for SSH connection to $MASTER_IP (external)..."
+            sleep 10
+          done
+          echo "SSH connection to $MASTER_IP (external) established"
+
+          # Check internal IPs for the rest of the masters and workers
+          ALL_INTERNAL_IPS="$INTERNAL_MASTER_IPS $INTERNAL_WORKER_IPS"
+          for host in $ALL_INTERNAL_IPS; do
             while ! nc -zv $host 22; do
-              echo "Waiting for SSH connection to $host..."
+              echo "Waiting for SSH connection to $host (internal)..."
               sleep 10
             done
-            echo "SSH connection to $host established"
+            echo "SSH connection to $host (internal) established"
           done
 
       - name: Copy SSH key to the first master host
@@ -84,8 +95,8 @@ jobs:
 
       - name: Generate hosts.yaml
         run: |
-          INTERNAL_MASTER_IPS=$(terraform output -json internal_master_ips | jq -c '.')
-          INTERNAL_WORKER_IPS=$(terraform output -json internal_worker_ips | jq -c '.')
+          INTERNAL_MASTER_IPS=$(terraform output -json master_internal_ips | jq -c '.')
+          INTERNAL_WORKER_IPS=$(terraform output -json worker_internal_ips | jq -c '.')
 
           python3 -c '
           import yaml
