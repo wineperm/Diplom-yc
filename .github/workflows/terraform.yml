@@ -55,22 +55,10 @@ jobs:
       id: get_worker_ips
       run: echo "::set-output name=ips::$(terraform output -json worker_ips | jq -r '.[]')"
 
-    - name: Check SSH connectivity to masters
-      run: |
-        for host in ${{ steps.get_master_ips.outputs.ips }}; do
-          nc -zv $host 22 || echo "SSH connection to $host failed"
-        done
-
-    - name: Check SSH connectivity to workers
-      run: |
-        for host in ${{ steps.get_worker_ips.outputs.ips }}; do
-          nc -zv $host 22 || echo "SSH connection to $host failed"
-        done
-
     - name: Install kubeadm on masters
       run: |
         for host in ${{ steps.get_master_ips.outputs.ips }}; do
-          ssh -o StrictHostKeyChecking=no ubuntu@$host '
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$host '
             sudo apt-get update &&
             sudo apt-get install -y apt-transport-https ca-certificates curl gpg &&
             sudo mkdir -p -m 755 /etc/apt/keyrings &&
@@ -84,19 +72,19 @@ jobs:
 
     - name: Initialize kubeadm on first master
       run: |
-        ssh -o StrictHostKeyChecking=no ubuntu@${{ steps.get_master_ips.outputs.ips[0] }} 'sudo kubeadm init --pod-network-cidr=10.244.0.0/16'
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@${{ steps.get_master_ips.outputs.ips[0] }} 'sudo kubeadm init --pod-network-cidr=10.244.0.0/16'
 
     - name: Join other masters
       run: |
-        JOIN_COMMAND=$(ssh -o StrictHostKeyChecking=no ubuntu@${{ steps.get_master_ips.outputs.ips[0] }} 'sudo kubeadm token create --print-join-command')
+        JOIN_COMMAND=$(ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@${{ steps.get_master_ips.outputs.ips[0] }} 'sudo kubeadm token create --print-join-command')
         for host in ${{ steps.get_master_ips.outputs.ips[1] }} ${{ steps.get_master_ips.outputs.ips[2] }}; do
-          ssh -o StrictHostKeyChecking=no ubuntu@$host "$JOIN_COMMAND --control-plane"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$host "$JOIN_COMMAND --control-plane"
         done
 
     - name: Install kubeadm on workers
       run: |
         for host in ${{ steps.get_worker_ips.outputs.ips }}; do
-          ssh -o StrictHostKeyChecking=no ubuntu@$host '
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$host '
             sudo apt-get update &&
             sudo apt-get install -y apt-transport-https ca-certificates curl gpg &&
             sudo mkdir -p -m 755 /etc/apt/keyrings &&
@@ -110,9 +98,9 @@ jobs:
 
     - name: Join workers
       run: |
-        JOIN_COMMAND=$(ssh -o StrictHostKeyChecking=no ubuntu@${{ steps.get_master_ips.outputs.ips[0] }} 'sudo kubeadm token create --print-join-command')
+        JOIN_COMMAND=$(ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@${{ steps.get_master_ips.outputs.ips[0] }} 'sudo kubeadm token create --print-join-command')
         for host in ${{ steps.get_worker_ips.outputs.ips }}; do
-          ssh -o StrictHostKeyChecking=no ubuntu@$host "$JOIN_COMMAND"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$host "$JOIN_COMMAND"
         done
 
     - name: Clean up on failure
