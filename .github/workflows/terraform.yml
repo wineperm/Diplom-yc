@@ -47,7 +47,7 @@ jobs:
           TF_VAR_yc_access_key: ${{ secrets.YC_ACCESS_KEY }}
           TF_VAR_yc_secret_key: ${{ secrets.YC_SECRET_KEY }}
           TF_VAR_tfstate_key: ${{ env.TFSTATE_KEY }}
-        run: terraform init
+        run: terraform init -reconfigure
 
       - name: Apply Terraform
         env:
