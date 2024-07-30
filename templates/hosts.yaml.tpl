@@ -1,28 +1,28 @@
 all:
   hosts:
-    %{ for master in masters ~}
-    k8s-master-${master.index}:
+    %{ for i, master in masters ~}
+    k8s-master-${i}:
       ansible_host: ${master.network_interface.0.nat_ip_address}
     %{ endfor ~}
-    %{ for worker in workers ~}
-    k8s-worker-${worker.index}:
+    %{ for i, worker in workers ~}
+    k8s-worker-${i}:
       ansible_host: ${worker.network_interface.0.nat_ip_address}
     %{ endfor ~}
   children:
     kube_control_plane:
       hosts:
-        %{ for master in masters ~}
-        k8s-master-${master.index}:
+        %{ for i, master in masters ~}
+        k8s-master-${i}:
         %{ endfor ~}
     kube_node:
       hosts:
-        %{ for worker in workers ~}
-        k8s-worker-${worker.index}:
+        %{ for i, worker in workers ~}
+        k8s-worker-${i}:
         %{ endfor ~}
     etcd:
       hosts:
-        %{ for master in masters ~}
-        k8s-master-${master.index}:
+        %{ for i, master in masters ~}
+        k8s-master-${i}:
         %{ endfor ~}
     k8s_cluster:
       children:
@@ -30,6 +30,6 @@ all:
         kube_node:
     calico_rr:
       hosts:
-        %{ for master in masters ~}
-        k8s-master-${master.index}:
+        %{ for i, master in masters ~}
+        k8s-master-${i}:
         %{ endfor ~}
