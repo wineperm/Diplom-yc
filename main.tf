@@ -57,11 +57,3 @@ resource "yandex_compute_instance" "k8s-worker" {
   }
   service_account_id = var.yc_service_account_id
 }
-
-resource "local_file" "ansible_inventory" {
-  filename = "inventory/mycluster/hosts.yaml"
-  content  = templatefile("${path.module}/templates/hosts.yaml.tpl", {
-    masters = yandex_compute_instance.k8s-master
-    workers = yandex_compute_instance.k8s-worker
-  })
-}
