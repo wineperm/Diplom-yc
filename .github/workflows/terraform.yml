@@ -132,42 +132,42 @@ jobs:
             calico_rr:
               hosts: {}
         ''')
-        with open('kubespray/inventory/mycluster/hosts.yaml', 'w') as f:
+        with open('~/kubespray/inventory/mycluster/hosts.yaml', 'w') as f:
             f.write(template.render(masters=masters, workers=workers))
         EOF
         
     - name: Display Ansible Inventory
       run: |
         MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "cat inventory/mycluster/hosts.yaml"
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "~/kubespray/inventory/mycluster/"
 
-    # - name: Clean up on failure
-    #   if: failure()
-    #   env:
-    #     TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
-    #     TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
-    #     TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
-    #     TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
-    #     TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
-    #   run: terraform destroy -auto-approve
+    - name: Clean up on failure
+      if: failure()
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+      run: terraform destroy -auto-approve
 
-    # - name: Display Success Message
-    #   if: success()
-    #   run: echo "ВСЕ НОРМАЛЬНО"
+    - name: Display Success Message
+      if: success()
+      run: echo "ВСЕ НОРМАЛЬНО"
 
-    # - name: Destroy Infrastructure
-    #   if: always()
-    #   env:
-    #     TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
-    #     TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
-    #     TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
-    #     TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
-    #     TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
-    #   run: terraform destroy -auto-approve
+    - name: Destroy Infrastructure
+      if: always()
+      env:
+        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+      run: terraform destroy -auto-approve
 
-    # - name: Clean up SSH keys
-    #   if: always()
-    #   run: |
-    #     rm -f ~/.ssh/id_ed25519
-    #     rm -f ~/.ssh/id_ed25519.pub
-    #     rm -f ~/.ssh/authorized_key.json
+    - name: Clean up SSH keys
+      if: always()
+      run: |
+        rm -f ~/.ssh/id_ed25519
+        rm -f ~/.ssh/id_ed25519.pub
+        rm -f ~/.ssh/authorized_key.json
