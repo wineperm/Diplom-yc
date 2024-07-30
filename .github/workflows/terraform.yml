@@ -49,11 +49,11 @@ jobs:
 
     - name: Get Master IPs
       id: get_master_ips
-      run: echo "::set-output name=ips::$(terraform output -raw master_ips)"
+      run: echo "::set-output name=ips::$(terraform output -json master_ips | jq -r '.[]')"
 
     - name: Get Worker IPs
       id: get_worker_ips
-      run: echo "::set-output name=ips::$(terraform output -raw worker_ips)"
+      run: echo "::set-output name=ips::$(terraform output -json worker_ips | jq -r '.[]')"
 
     - name: Install kubeadm on masters
       run: |
