@@ -60,51 +60,12 @@ jobs:
             echo "SSH connection to $host established"
           done
 
-      - name: Generate hosts.yaml
-        run: |
-          MASTER_IPS=$(terraform output -json master_ips | jq -r '.[]')
-          WORKER_IPS=$(terraform output -json worker_ips | jq -r '.[]')
-          cat <<EOF > hosts.yaml
-          all:
-            hosts:
-              $(for i in $(seq 1 ${#MASTER_IPS[@]}); do echo "              node$i:"; done)
-              $(for i in $(seq ${#MASTER_IPS[@]} $(( ${#MASTER_IPS[@]} + ${#WORKER_IPS[@]} ))); do echo "              node$i:"; done)
-            children:
-              kube_control_plane:
-                hosts:
-                  $(for i in $(seq 1 ${#MASTER_IPS[@]}); do echo "                  node$i:"; done)
-              kube_node:
-                hosts:
-                  $(for i in $(seq ${#MASTER_IPS[@]} $(( ${#MASTER_IPS[@]} + ${#WORKER_IPS[@]} ))); do echo "                  node$i:"; done)
-              etcd:
-                hosts:
-                  $(for i in $(seq 1 ${#MASTER_IPS[@]}); do echo "                  node$i:"; done)
-              k8s_cluster:
-                children:
-                  kube_control_plane:
-                  kube_node:
-              calico_rr:
-                hosts: {}
-          EOF
-
-          # Add IP addresses to the hosts
-          sed -i "s/node1:/node1:\n              ansible_host: ${MASTER_IPS[0]}\n              ip: ${MASTER_IPS[0]}\n              access_ip: ${MASTER_IPS[0]}/g" hosts.yaml
-          sed -i "s/node2:/node2:\n              ansible_host: ${MASTER_IPS[1]}\n              ip: ${MASTER_IPS[1]}\n              access_ip: ${MASTER_IPS[1]}/g" hosts.yaml
-          sed -i "s/node3:/node3:\n              ansible_host: ${WORKER_IPS[0]}\n              ip: ${WORKER_IPS[0]}\n              access_ip: ${WORKER_IPS[0]}/g" hosts.yaml
-          sed -i "s/node4:/node4:\n              ansible_host: ${WORKER_IPS[1]}\n              ip: ${WORKER_IPS[1]}\n              access_ip: ${WORKER_IPS[1]}/g" hosts.yaml
-          sed -i "s/node5:/node5:\n              ansible_host: ${WORKER_IPS[2]}\n              ip: ${WORKER_IPS[2]}\n              access_ip: ${WORKER_IPS[2]}/g" hosts.yaml
-
       - name: Copy SSH key to the first master host
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
           MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "mkdir -p ~/.ssh && echo \"$SSH_PRIVATE_KEY\" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519"
-
-      - name: Copy hosts.yaml to the first master host
-        run: |
-          MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 hosts.yaml ubuntu@$MASTER_IP:~/kubespray/inventory/mycluster/hosts.yaml
 
       - name: Set up Python on the first master host
         run: |
@@ -120,6 +81,11 @@ jobs:
         run: |
           MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "cd kubespray && cp -rfp inventory/sample inventory/mycluster"
+
+      - name: Copy hosts.yaml to the first master host
+        run: |
+          MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 hosts.yaml ubuntu@$MASTER_IP:~/kubespray/inventory/mycluster/hosts.yaml
 
       - name: Display Ansible Inventory
         run: |
