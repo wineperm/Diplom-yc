@@ -47,54 +47,46 @@ jobs:
         TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
       run: terraform apply -auto-approve
 
-    - name: Get Master IPs
-      id: get_master_ips
-      run: echo "::set-output name=ips::$(terraform output -json master_ips | jq -r '.[]')"
-
-    - name: Get Worker IPs
-      id: get_worker_ips
-      run: echo "::set-output name=ips::$(terraform output -json worker_ips | jq -r '.[]')"
-
-    - name: Wait for 90 seconds
-      run: sleep 90
-
-    - name: Check SSH connectivity to masters
+    - name: Wait for SSH connectivity to masters and workers
       run: |
-        for host in ${{ steps.get_master_ips.outputs.ips }}; do
-          nc -zv $host 22 || echo "SSH connection to $host failed"
-        done
-
-    - name: Check SSH connectivity to workers
-      run: |
-        for host in ${{ steps.get_worker_ips.outputs.ips }}; do
-          nc -zv $host 22 || echo "SSH connection to $host failed"
+        MASTER_IPS=$(terraform output -json master_ips | jq -r '.[]')
+        WORKER_IPS=$(terraform output -json worker_ips | jq -r '.[]')
+        ALL_IPS="$MASTER_IPS $WORKER_IPS"
+        for host in $ALL_IPS; do
+          while ! nc -zv $host 22; do
+            echo "Waiting for SSH connection to $host..."
+            sleep 10
+          done
+          echo "SSH connection to $host established"
         done
 
     - name: Copy SSH key to the first master host
       env:
         SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       run: |
-        MASTER_IP=$(echo ${{ steps.get_master_ips.outputs.ips }} | awk '{print $1}')
+        MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
         ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "mkdir -p ~/.ssh && echo \"$SSH_PRIVATE_KEY\" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519"
 
     - name: Set up Python on the first master host
       run: |
-        MASTER_IP=$(echo ${{ steps.get_master_ips.outputs.ips }} | awk '{print $1}')
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "sudo apt-get update && sudo apt-get install -y python3-pip && pip3 install -r https://raw.githubusercontent.com/kubernetes-sigs/kubespray/master/requirements.txt"
+        MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "sudo apt-get update && sudo apt-get install -y python3-venv && python3 -m venv ~/kubespray-env && source ~/kubespray-env/bin/activate && pip install -r https://raw.githubusercontent.com/kubernetes-sigs/kubespray/master/requirements.txt"
 
     - name: Clone Kubespray repository on the first master host
       run: |
-        MASTER_IP=$(echo ${{ steps.get_master_ips.outputs.ips }} | awk '{print $1}')
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "git clone https://github.com/kubernetes-sigs/kubespray.git && cd kubespray && pip3 install -r requirements.txt"
+        MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "source ~/kubespray-env/bin/activate && git clone https://github.com/kubernetes-sigs/kubespray.git && cd kubespray && pip install -r requirements.txt"
 
     - name: Generate Ansible inventory on the first master host
       run: |
-        MASTER_IP=$(echo ${{ steps.get_master_ips.outputs.ips }} | awk '{print $1}')
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "cd kubespray && cp -r inventory/sample inventory/mycluster && CONFIG_FILE=inventory/mycluster/hosts.yaml python3 contrib/inventory_builder/inventory.py ${{ steps.get_master_ips.outputs.ips }} ${{ steps.get_worker_ips.outputs.ips }}"
+        MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
+        MASTER_IPS=$(terraform output -json master_ips | jq -r '.[]')
+        WORKER_IPS=$(terraform output -json worker_ips | jq -r '.[]')
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "source ~/kubespray-env/bin/activate && cd kubespray && cp -r inventory/sample inventory/mycluster && CONFIG_FILE=inventory/mycluster/hosts.yaml python3 contrib/inventory_builder/inventory.py $MASTER_IPS $WORKER_IPS"
 
     - name: Display Ansible Inventory
       run: |
-        MASTER_IP=$(echo ${{ steps.get_master_ips.outputs.ips }} | awk '{print $1}')
+        MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
         ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "cat kubespray/inventory/mycluster/hosts.yaml"
 
     - name: Clean up on failure
