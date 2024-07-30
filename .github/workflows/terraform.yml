@@ -55,6 +55,23 @@ jobs:
     - name: Install jq
       run: sudo apt-get install -y jq
 
+    - name: Copy public SSH key to all hosts
+      run: |
+        #!/bin/bash
+      
+        # Получаем IP-адреса мастеров и воркеров из Terraform вывода
+        MASTER_IPS=$(terraform output -json master_ips | jq -r '.[]')
+        WORKER_IPS=$(terraform output -json worker_ips | jq -r '.[]')
+      
+        # Объединяем IP-адреса мастеров и воркеров в один массив
+        ALL_IPS=($MASTER_IPS $WORKER_IPS)
+      
+        # Копируем публичный SSH-ключ на все хосты
+        for IP in "${ALL_IPS[@]}"; do
+          scp -o StrictHostKeyChecking=no ~/.ssh/id_ed25519.pub ubuntu@$IP:~/.ssh/authorized_keys
+          ssh -o StrictHostKeyChecking=no ubuntu@$IP "sudo chmod 600 ~/.ssh/authorized_keys"
+        done
+
     - name: Copy SSH key to all hosts
       run: |
         #!/bin/bash
