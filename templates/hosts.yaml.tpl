@@ -28,9 +28,9 @@ all:
         {% for master in masters %}
         k8s-master-{{ loop.index }}:
         {% endfor %}
-    calico_rr:
-      hosts: {}
     k8s_cluster:
       children:
         kube_control_plane:
         kube_node:
+    calico_rr:
+        hosts: {}
