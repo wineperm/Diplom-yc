@@ -20,3 +20,14 @@ variable "ssh_public_key" {
   type        = string
 }
 
+variable "tfstate_key" {
+  type = string
+}
+
+variable "yc_access_key" {
+  type = string
+}
+
+variable "yc_secret_key" {
+  type = string
+}
