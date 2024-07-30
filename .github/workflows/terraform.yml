@@ -84,62 +84,15 @@ jobs:
 
     - name: Generate Ansible Inventory
       run: |
-        mkdir -p kubespray/inventory/mycluster
+        MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
         MASTER_IPS=$(terraform output -json master_ips)
         WORKER_IPS=$(terraform output -json worker_ips)
-        python3 - <<EOF
-        import json
-        from jinja2 import Template
-        
-        masters = json.loads('$MASTER_IPS')
-        workers = json.loads('$WORKER_IPS')
-        
-        template = Template('''
-        all:
-          hosts:
-            {% for master in masters %}
-            k8s-master-{{ loop.index }}:
-              ansible_host: {{ master }}
-              ip: {{ master }}
-              access_ip: {{ master }}
-            {% endfor %}
-            {% for worker in workers %}
-            k8s-worker-{{ loop.index }}:
-              ansible_host: {{ worker }}
-              ip: {{ worker }}
-              access_ip: {{ worker }}
-            {% endfor %}
-          children:
-            kube_control_plane:
-              hosts:
-                {% for master in masters %}
-                k8s-master-{{ loop.index }}:
-                {% endfor %}
-            kube_node:
-              hosts:
-                {% for worker in workers %}
-                k8s-worker-{{ loop.index }}:
-                {% endfor %}
-            etcd:
-              hosts:
-                {% for master in masters %}
-                k8s-master-{{ loop.index }}:
-                {% endfor %}
-            k8s_cluster:
-              children:
-                kube_control_plane:
-                kube_node:
-            calico_rr:
-              hosts: {}
-        ''')
-        with open('kubespray/inventory/mycluster/hosts.yaml', 'w') as f:
-            f.write(template.render(masters=masters, workers=workers))
-        EOF
-        
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "source ~/kubespray-env/bin/activate && pip install ruamel.yaml && cd kubespray && cp -r inventory/sample inventory/mycluster && CONFIG_FILE=inventory/mycluster/hosts.yaml python3 contrib/inventory_builder/inventory.py $MASTER_IPS $WORKER_IPS"
+
     - name: Display Ansible Inventory
       run: |
         MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "kubespray/inventory/mycluster/hosts.yaml"
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "cat kubespray/inventory/mycluster/hosts.yaml"
 
     - name: Clean up on failure
       if: failure()
