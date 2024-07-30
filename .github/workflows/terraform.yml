@@ -90,18 +90,17 @@ jobs:
         ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "source ~/kubespray-env/bin/activate && cd kubespray && cat <<EOF > inventory/mycluster/hosts.yaml
 all:
   hosts:
-$(for master in $MASTER_IPS; do echo "    k8s-master-$(echo $MASTER_IPS | grep -n $master | cut -d: -f1):"; echo "      ansible_host: $master"; echo "      ip: $master"; echo "      access_ip: $master"; done)
-$(for worker in $WORKER_IPS; do echo "    k8s-worker-$(echo $WORKER_IPS | grep -n $worker | cut -d: -f1):"; echo "      ansible_host: $worker"; echo "      ip: $worker"; echo "      access_ip: $worker"; done)
+$(for i in $(seq 1 $(echo "$MASTER_IPS $WORKER_IPS" | wc -w)); do echo "    node$i:"; echo "      ansible_host: $(echo "$MASTER_IPS $WORKER_IPS" | awk "NR==$i")"; echo "      ip: $(echo "$MASTER_IPS $WORKER_IPS" | awk "NR==$i")"; echo "      access_ip: $(echo "$MASTER_IPS $WORKER_IPS" | awk "NR==$i")"; done)
   children:
     kube_control_plane:
       hosts:
-$(for master in $MASTER_IPS; do echo "        k8s-master-$(echo $MASTER_IPS | grep -n $master | cut -d: -f1):"; done)
+        node1:
     kube_node:
       hosts:
-$(for worker in $WORKER_IPS; do echo "        k8s-worker-$(echo $WORKER_IPS | grep -n $worker | cut -d: -f1):"; done)
+$(for i in $(seq 2 $(echo "$WORKER_IPS" | wc -w | awk '{print $1+1}')); do echo "        node$i:"; done)
     etcd:
       hosts:
-$(for master in $MASTER_IPS; do echo "        k8s-master-$(echo $MASTER_IPS | grep -n $master | cut -d: -f1):"; done)
+        node1:
     k8s_cluster:
       children:
         kube_control_plane:
