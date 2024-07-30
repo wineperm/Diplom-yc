@@ -3,9 +3,9 @@ terraform {
     endpoint = "storage.yandexcloud.net"
     bucket   = "wineperm12354464"
     region   = "ru-central1"
-    key      = var.tfstate_key
-    access_key = var.yc_access_key
-    secret_key = var.yc_secret_key
+    key      = "${var.tfstate_key}"
+    access_key = "${var.yc_access_key}"
+    secret_key = "${var.yc_secret_key}"
 
     skip_region_validation      = true
     skip_credentials_validation = true
