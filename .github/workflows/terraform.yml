@@ -88,13 +88,13 @@ jobs:
           all:
             hosts:
               {% for master in masters %}
-              node{{ loop.index }}:
+              node-master{{ loop.index }}:
                 ansible_host: {{ master }}
                 ip: {{ master }}
                 access_ip: {{ master }}
               {% endfor %}
               {% for worker in workers %}
-              node{{ loop.index + masters|length }}:
+              node-worker{{ loop.index }}:
                 ansible_host: {{ worker }}
                 ip: {{ worker }}
                 access_ip: {{ worker }}
@@ -103,17 +103,17 @@ jobs:
               kube_control_plane:
                 hosts:
                   {% for master in masters %}
-                  node{{ loop.index }}:
+                  node-master{{ loop.index }}:
                   {% endfor %}
               kube_node:
                 hosts:
                   {% for worker in workers %}
-                  node{{ loop.index + masters|length }}:
+                  node-worker{{ loop.index }}:
                   {% endfor %}
               etcd:
                 hosts:
                   {% for master in masters %}
-                  node{{ loop.index }}:
+                  node-master{{ loop.index }}:
                   {% endfor %}
               k8s_cluster:
                 children:
