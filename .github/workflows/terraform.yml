@@ -47,12 +47,10 @@ jobs:
           TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
         run: terraform apply -auto-approve
 
-      - name: Wait for SSH connectivity to masters and workers
+      - name: Wait for SSH connectivity to masters
         run: |
           MASTER_IPS=$(terraform output -json master_ips | jq -r '.[]')
-          WORKER_IPS=$(terraform output -json worker_ips | jq -r '.[]')
-          ALL_IPS="$MASTER_IPS $WORKER_IPS"
-          for host in $ALL_IPS; do
+          for host in $MASTER_IPS; do
             while ! nc -zv $host 22; do
               echo "Waiting for SSH connection to $host..."
               sleep 10
