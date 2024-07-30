@@ -92,6 +92,11 @@ jobs:
           MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "cat kubespray/inventory/mycluster/hosts.yaml"
 
+      - name: Run Ansible Playbook on the first master host
+        run: |
+          MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "source ~/kubespray-env/bin/activate && cd kubespray && ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -v"
+
       - name: Clean up on failure
         if: failure()
         env:
