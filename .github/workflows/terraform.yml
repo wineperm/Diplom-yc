@@ -49,7 +49,7 @@ jobs:
 
       - name: Wait for SSH connectivity to masters
         run: |
-          MASTER_IPS=$(terraform output -json master_internal_ips | jq -r '.[]')
+          MASTER_IPS=$(terraform output -json master_external_ips | jq -r '.[]')
           for host in $MASTER_IPS; do
             while ! nc -zv $host 22; do
               echo "Waiting for SSH connection to $host..."
@@ -62,22 +62,22 @@ jobs:
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
-          MASTER_IP=$(terraform output -json master_internal_ips | jq -r '.[0]')
+          MASTER_IP=$(terraform output -json master_external_ips | jq -r '.[0]')
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "mkdir -p ~/.ssh && echo \"$SSH_PRIVATE_KEY\" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519"
 
       - name: Set up Python on the first master host
         run: |
-          MASTER_IP=$(terraform output -json master_internal_ips | jq -r '.[0]')
+          MASTER_IP=$(terraform output -json master_external_ips | jq -r '.[0]')
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "sudo apt-get update && sudo apt-get install -y python3-venv && python3 -m venv ~/kubespray-env && source ~/kubespray-env/bin/activate && pip install -r https://raw.githubusercontent.com/kubernetes-sigs/kubespray/master/requirements.txt"
 
       - name: Clone Kubespray repository on the first master host
         run: |
-          MASTER_IP=$(terraform output -json master_internal_ips | jq -r '.[0]')
+          MASTER_IP=$(terraform output -json master_external_ips | jq -r '.[0]')
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "source ~/kubespray-env/bin/activate && git clone https://github.com/kubernetes-sigs/kubespray.git && cd kubespray && pip install -r requirements.txt"
 
       - name: Copy sample inventory to mycluster on the first master host
         run: |
-          MASTER_IP=$(terraform output -json master_internal_ips | jq -r '.[0]')
+          MASTER_IP=$(terraform output -json master_external_ips | jq -r '.[0]')
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "cd kubespray && cp -rfp inventory/sample inventory/mycluster"
 
       - name: Generate hosts.yaml
@@ -143,17 +143,17 @@ jobs:
 
       - name: Copy hosts.yaml to the first master host
         run: |
-          MASTER_IP=$(terraform output -json master_internal_ips | jq -r '.[0]')
+          MASTER_IP=$(terraform output -json master_external_ips | jq -r '.[0]')
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 hosts.yaml ubuntu@$MASTER_IP:~/kubespray/inventory/mycluster/hosts.yaml
 
       - name: Display Ansible Inventory
         run: |
-          MASTER_IP=$(terraform output -json master_internal_ips | jq -r '.[0]')
+          MASTER_IP=$(terraform output -json master_external_ips | jq -r '.[0]')
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "cat kubespray/inventory/mycluster/hosts.yaml"
 
       - name: Run Ansible Playbook on the first master host
         run: |
-          MASTER_IP=$(terraform output -json master_internal_ips | jq -r '.[0]')
+          MASTER_IP=$(terraform output -json master_external_ips | jq -r '.[0]')
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "source ~/kubespray-env/bin/activate && cd kubespray && ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -v"
 
       - name: Clean up on failure
