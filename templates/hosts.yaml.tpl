@@ -1,35 +1,36 @@
 all:
   hosts:
-    %{ for i, master in masters ~}
-    k8s-master-${i}:
-      ansible_host: ${master.network_interface.0.nat_ip_address}
+    %{ for i, ip in master_ips ~}
+    node${i + 1}:
+      ansible_host: ${ip}
+      ip: ${ip}
+      access_ip: ${ip}
     %{ endfor ~}
-    %{ for i, worker in workers ~}
-    k8s-worker-${i}:
-      ansible_host: ${worker.network_interface.0.nat_ip_address}
+    %{ for i, ip in worker_ips ~}
+    node${i + ${length(master_ips)} + 1}:
+      ansible_host: ${ip}
+      ip: ${ip}
+      access_ip: ${ip}
     %{ endfor ~}
   children:
     kube_control_plane:
       hosts:
-        %{ for i, master in masters ~}
-        k8s-master-${i}:
+        %{ for i, ip in master_ips ~}
+        node${i + 1}:
         %{ endfor ~}
     kube_node:
       hosts:
-        %{ for i, worker in workers ~}
-        k8s-worker-${i}:
+        %{ for i, ip in worker_ips ~}
+        node${i + ${length(master_ips)} + 1}:
         %{ endfor ~}
     etcd:
       hosts:
-        %{ for i, master in masters ~}
-        k8s-master-${i}:
+        %{ for i, ip in master_ips ~}
+        node${i + 1}:
         %{ endfor ~}
     k8s_cluster:
       children:
         kube_control_plane:
         kube_node:
     calico_rr:
-      hosts:
-        %{ for i, master in masters ~}
-        k8s-master-${i}:
-        %{ endfor ~}
+      hosts: {}
