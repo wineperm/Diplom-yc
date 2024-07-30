@@ -17,7 +17,7 @@ resource "yandex_compute_instance" "k8s-master" {
   }
   network_interface {
     subnet_id = element([yandex_vpc_subnet.master-subnet-a.id, yandex_vpc_subnet.master-subnet-b.id, yandex_vpc_subnet.master-subnet-d.id], count.index)
-    nat       = count.index == 0 ? true : false
+    nat       = true
   }
   scheduling_policy {
     preemptible = true
@@ -47,7 +47,7 @@ resource "yandex_compute_instance" "k8s-worker" {
   }
   network_interface {
     subnet_id = element([yandex_vpc_subnet.worker-subnet-a.id, yandex_vpc_subnet.worker-subnet-b.id, yandex_vpc_subnet.worker-subnet-d.id], count.index % 3)
-    nat       = false
+    nat       = true
   }
   scheduling_policy {
     preemptible = true
@@ -62,13 +62,12 @@ resource "local_file" "hosts_yaml" {
   content = templatefile("${path.module}/templates/hosts.yaml.tpl", {
     master_hosts = [for i, instance in yandex_compute_instance.k8s-master : {
       name = instance.name
-      ip   = instance.network_interface.0.ip_address
+      ip   = instance.network_interface.0.nat_ip_address
     }]
     worker_hosts = [for i, instance in yandex_compute_instance.k8s-worker : {
       name = instance.name
-      ip   = instance.network_interface.0.ip_address
+      ip   = instance.network_interface.0.nat_ip_address
     }]
   })
   filename = "${path.module}/hosts.yaml"
 }
-
