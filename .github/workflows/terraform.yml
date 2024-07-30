@@ -82,12 +82,17 @@ jobs:
         MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
         ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "cd kubespray && cp -rfp inventory/sample inventory/mycluster"
 
+    - name: Copy hosts.yaml.tpl to the first master host
+      run: |
+        MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
+        scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 templates/hosts.yaml.tpl ubuntu@$MASTER_IP:/home/ubuntu/kubespray/inventory/mycluster/hosts.yaml.tpl
+
     - name: Generate Ansible Inventory
       run: |
         MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
         MASTER_IPS=$(terraform output -json master_ips)
         WORKER_IPS=$(terraform output -json worker_ips)
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "source ~/kubespray-env/bin/activate && pip install ruamel.yaml && cd kubespray && cp -r inventory/sample inventory/mycluster && CONFIG_FILE=inventory/mycluster/hosts.yaml python3 contrib/inventory_builder/inventory.py $MASTER_IPS $WORKER_IPS"
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "source ~/kubespray-env/bin/activate && pip install ruamel.yaml && cd kubespray && CONFIG_FILE=inventory/mycluster/hosts.yaml python3 contrib/inventory_builder/inventory.py $MASTER_IPS $WORKER_IPS"
 
     - name: Display Ansible Inventory
       run: |
