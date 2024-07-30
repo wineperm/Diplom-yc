@@ -1,17 +1,3 @@
-terraform {
-  backend "s3" {
-    endpoint = "storage.yandexcloud.net"
-    bucket   = "wineperm12354464"
-    region   = "ru-central1"
-    key      = "${var.tfstate_key}"
-    access_key = "${var.yc_access_key}"
-    secret_key = "${var.yc_secret_key}"
-
-    skip_region_validation      = true
-    skip_credentials_validation = true
-  }
-}
-
 resource "yandex_compute_instance" "k8s-master" {
   count       = 2
   name        = "k8s-master-${count.index}"
