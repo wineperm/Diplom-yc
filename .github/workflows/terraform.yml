@@ -97,7 +97,13 @@ jobs:
     - name: Display Ansible Inventory
       run: |
         MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "cat kubespray/inventory/mycluster/hosts.yaml"
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "
+          if [ -f kubespray/inventory/mycluster/hosts.yaml ]; then
+            cat kubespray/inventory/mycluster/hosts.yaml
+          else
+            echo 'File kubespray/inventory/mycluster/hosts.yaml does not exist'
+          fi
+        "
 
     - name: Clean up on failure
       if: failure()
