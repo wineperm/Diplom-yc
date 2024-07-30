@@ -86,7 +86,6 @@ jobs:
       run: |
         MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
         ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "
-          mkdir -p kubespray/inventory/mycluster
           MASTER_IPS=$(terraform output -json master_ips)
           WORKER_IPS=$(terraform output -json worker_ips)
           python3 - <<EOF
