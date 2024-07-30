@@ -77,12 +77,38 @@ jobs:
         MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
         ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "source ~/kubespray-env/bin/activate && git clone https://github.com/kubernetes-sigs/kubespray.git && cd kubespray && pip install -r requirements.txt"
 
+    - name: Copy sample inventory to mycluster on the first master host
+      run: |
+        MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "cd kubespray && cp -rfp inventory/sample inventory/mycluster"
+
     - name: Generate Ansible inventory on the first master host
       run: |
         MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
         MASTER_IPS=$(terraform output -json master_ips | jq -r '.[]')
         WORKER_IPS=$(terraform output -json worker_ips | jq -r '.[]')
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "source ~/kubespray-env/bin/activate && cd kubespray && cp -r inventory/sample inventory/mycluster && CONFIG_FILE=inventory/mycluster/hosts.yaml python3 contrib/inventory_builder/inventory.py $MASTER_IPS $WORKER_IPS"
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "source ~/kubespray-env/bin/activate && cd kubespray && cat <<EOF > inventory/mycluster/hosts.yaml
+all:
+  hosts:
+$(for master in $MASTER_IPS; do echo "    k8s-master-$(echo $MASTER_IPS | grep -n $master | cut -d: -f1):"; echo "      ansible_host: $master"; echo "      ip: $master"; echo "      access_ip: $master"; done)
+$(for worker in $WORKER_IPS; do echo "    k8s-worker-$(echo $WORKER_IPS | grep -n $worker | cut -d: -f1):"; echo "      ansible_host: $worker"; echo "      ip: $worker"; echo "      access_ip: $worker"; done)
+  children:
+    kube_control_plane:
+      hosts:
+$(for master in $MASTER_IPS; do echo "        k8s-master-$(echo $MASTER_IPS | grep -n $master | cut -d: -f1):"; done)
+    kube_node:
+      hosts:
+$(for worker in $WORKER_IPS; do echo "        k8s-worker-$(echo $WORKER_IPS | grep -n $worker | cut -d: -f1):"; done)
+    etcd:
+      hosts:
+$(for master in $MASTER_IPS; do echo "        k8s-master-$(echo $MASTER_IPS | grep -n $master | cut -d: -f1):"; done)
+    k8s_cluster:
+      children:
+        kube_control_plane:
+        kube_node:
+    calico_rr:
+        hosts: {}
+EOF"
 
     - name: Display Ansible Inventory
       run: |
