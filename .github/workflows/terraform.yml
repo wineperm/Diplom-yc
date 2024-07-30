@@ -70,54 +70,6 @@ jobs:
           nc -zv $host 22 || echo "SSH connection to $host failed"
         done
 
-    - name: Install kubeadm on masters
-      run: |
-        for host in ${{ steps.get_master_ips.outputs.ips }}; do
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$host '
-            sudo apt-get update &&
-            sudo apt-get install -y apt-transport-https ca-certificates curl gpg &&
-            sudo mkdir -p -m 755 /etc/apt/keyrings &&
-            curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg &&
-            echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list &&
-            sudo apt-get update &&
-            sudo apt-get install -y kubelet kubeadm kubectl &&
-            sudo apt-mark hold kubelet kubeadm kubectl
-          '
-        done
-
-    - name: Initialize kubeadm on first master
-      run: |
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@${{ steps.get_master_ips.outputs.ips[0] }} 'sudo kubeadm init --pod-network-cidr=10.244.0.0/16'
-
-    - name: Join other masters
-      run: |
-        JOIN_COMMAND=$(ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@${{ steps.get_master_ips.outputs.ips[0] }} 'sudo kubeadm token create --print-join-command')
-        for host in ${{ steps.get_master_ips.outputs.ips[1] }} ${{ steps.get_master_ips.outputs.ips[2] }}; do
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$host "$JOIN_COMMAND --control-plane"
-        done
-
-    - name: Install kubeadm on workers
-      run: |
-        for host in ${{ steps.get_worker_ips.outputs.ips }}; do
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$host '
-            sudo apt-get update &&
-            sudo apt-get install -y apt-transport-https ca-certificates curl gpg &&
-            sudo mkdir -p -m 755 /etc/apt/keyrings &&
-            curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg &&
-            echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list &&
-            sudo apt-get update &&
-            sudo apt-get install -y kubelet kubeadm kubectl &&
-            sudo apt-mark hold kubelet kubeadm kubectl
-          '
-        done
-
-    - name: Join workers
-      run: |
-        JOIN_COMMAND=$(ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@${{ steps.get_master_ips.outputs.ips[0] }} 'sudo kubeadm token create --print-join-command')
-        for host in ${{ steps.get_worker_ips.outputs.ips }}; do
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$host "$JOIN_COMMAND"
-        done
-
     - name: Clean up on failure
       if: failure()
       env:
