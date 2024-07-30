@@ -58,7 +58,16 @@ jobs:
     - name: Install kubeadm on masters
       run: |
         for host in ${{ steps.get_master_ips.outputs.ips }}; do
-          ssh -o StrictHostKeyChecking=no ubuntu@$host 'sudo apt-get update && sudo apt-get install -y apt-transport-https ca-certificates curl && curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add - && echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list && sudo apt-get update && sudo apt-get install -y kubelet kubeadm kubectl && sudo apt-mark hold kubelet kubeadm kubectl'
+          ssh -o StrictHostKeyChecking=no ubuntu@$host '
+            sudo apt-get update &&
+            sudo apt-get install -y apt-transport-https ca-certificates curl gpg &&
+            sudo mkdir -p -m 755 /etc/apt/keyrings &&
+            curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg &&
+            echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list &&
+            sudo apt-get update &&
+            sudo apt-get install -y kubelet kubeadm kubectl &&
+            sudo apt-mark hold kubelet kubeadm kubectl
+          '
         done
 
     - name: Initialize kubeadm on first master
@@ -75,7 +84,16 @@ jobs:
     - name: Install kubeadm on workers
       run: |
         for host in ${{ steps.get_worker_ips.outputs.ips }}; do
-          ssh -o StrictHostKeyChecking=no ubuntu@$host 'sudo apt-get update && sudo apt-get install -y apt-transport-https ca-certificates curl && curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add - && echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list && sudo apt-get update && sudo apt-get install -y kubelet kubeadm kubectl && sudo apt-mark hold kubelet kubeadm kubectl'
+          ssh -o StrictHostKeyChecking=no ubuntu@$host '
+            sudo apt-get update &&
+            sudo apt-get install -y apt-transport-https ca-certificates curl gpg &&
+            sudo mkdir -p -m 755 /etc/apt/keyrings &&
+            curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg &&
+            echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list &&
+            sudo apt-get update &&
+            sudo apt-get install -y kubelet kubeadm kubectl &&
+            sudo apt-mark hold kubelet kubeadm kubectl
+          '
         done
 
     - name: Join workers
