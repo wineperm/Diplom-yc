@@ -82,22 +82,6 @@ jobs:
           MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "cd kubespray && cp -rfp inventory/sample inventory/mycluster"
 
-      - name: Generate Ansible Inventory
-        run: |
-          MASTER_IPS=$(terraform output -json master_ips)
-          WORKER_IPS=$(terraform output -json worker_ips)
-          terraform output -json | jq -r '.master_ips.value[]' > master_ips.txt
-          terraform output -json | jq -r '.worker_ips.value[]' > worker_ips.txt
-          python3 -m venv venv
-          source venv/bin/activate
-          pip install ruamel.yaml
-          python3 scripts/generate_inventory.py master_ips.txt worker_ips.txt > inventory/mycluster/hosts.yaml
-
-      - name: Copy Ansible Inventory to the first master host
-        run: |
-          MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 inventory/mycluster/hosts.yaml ubuntu@$MASTER_IP:/inventory/mycluster/hosts.yaml
-
       - name: Display Ansible Inventory
         run: |
           MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
