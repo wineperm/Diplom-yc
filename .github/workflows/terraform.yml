@@ -84,8 +84,8 @@ jobs:
 
       - name: Generate hosts.yaml
         run: |
-          MASTER_IPS=$(terraform output -json master_ips | jq -r '.[]')
-          WORKER_IPS=$(terraform output -json worker_ips | jq -r '.[]')
+          MASTER_IPS=$(terraform output -json master_ips | jq -c '.')
+          WORKER_IPS=$(terraform output -json worker_ips | jq -c '.')
 
           python3 -c '
           import yaml
@@ -139,6 +139,9 @@ jobs:
           with open("hosts.yaml", "w") as file:
               yaml.dump(data, file, default_flow_style=False, sort_keys=False)
           '
+        env:
+          MASTER_IPS: ${{ env.MASTER_IPS }}
+          WORKER_IPS: ${{ env.WORKER_IPS }}
 
       - name: Copy hosts.yaml to the first master host
         run: |
@@ -153,7 +156,7 @@ jobs:
       - name: Run Ansible Playbook on the first master host
         run: |
           MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "source ~/kubespray-env/bin/activate && cd kubespray && ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -vvv"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "source ~/kubespray-env/bin/activate && cd kubespray && ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -v"
 
       - name: Clean up on failure
         if: failure()
