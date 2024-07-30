@@ -77,6 +77,26 @@ jobs:
         MASTER_IP=$(echo ${{ steps.get_master_ips.outputs.ips }} | awk '{print $1}')
         ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "mkdir -p ~/.ssh && echo \"$SSH_PRIVATE_KEY\" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519"
 
+    - name: Set up Python on the first master host
+      run: |
+        MASTER_IP=$(echo ${{ steps.get_master_ips.outputs.ips }} | awk '{print $1}')
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "sudo apt-get update && sudo apt-get install -y python3-pip && pip3 install -r https://raw.githubusercontent.com/kubernetes-sigs/kubespray/master/requirements.txt"
+
+    - name: Clone Kubespray repository on the first master host
+      run: |
+        MASTER_IP=$(echo ${{ steps.get_master_ips.outputs.ips }} | awk '{print $1}')
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "git clone https://github.com/kubernetes-sigs/kubespray.git && cd kubespray && pip3 install -r requirements.txt"
+
+    - name: Generate Ansible inventory on the first master host
+      run: |
+        MASTER_IP=$(echo ${{ steps.get_master_ips.outputs.ips }} | awk '{print $1}')
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "cd kubespray && cp -r inventory/sample inventory/mycluster && CONFIG_FILE=inventory/mycluster/hosts.yaml python3 contrib/inventory_builder/inventory.py ${{ steps.get_master_ips.outputs.ips }} ${{ steps.get_worker_ips.outputs.ips }}"
+
+    - name: Display Ansible Inventory
+      run: |
+        MASTER_IP=$(echo ${{ steps.get_master_ips.outputs.ips }} | awk '{print $1}')
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "cat kubespray/inventory/mycluster/hosts.yaml"
+
     - name: Clean up on failure
       if: failure()
       env:
