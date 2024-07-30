@@ -29,14 +29,6 @@ jobs:
           echo "$SERVICE_ACCOUNT_KEY_FILE" > ~/.ssh/authorized_key.json
           chmod 600 ~/.ssh/authorized_key.json
 
-      - name: Set up Terraform backend
-        run: |
-          export TFSTATE_KEY="terraform.tfstate"
-          echo "TFSTATE_KEY=$TFSTATE_KEY" >> $GITHUB_ENV
-          echo "TF_VAR_tfstate_key=$TFSTATE_KEY" >> $GITHUB_ENV
-          echo "TF_VAR_yc_access_key=${{ secrets.YC_ACCESS_KEY }}" >> $GITHUB_ENV
-          echo "TF_VAR_yc_secret_key=${{ secrets.YC_SECRET_KEY }}" >> $GITHUB_ENV
-
       - name: Initialize Terraform
         env:
           TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
@@ -47,7 +39,7 @@ jobs:
           TF_VAR_yc_access_key: ${{ secrets.YC_ACCESS_KEY }}
           TF_VAR_yc_secret_key: ${{ secrets.YC_SECRET_KEY }}
           TF_VAR_tfstate_key: ${{ env.TFSTATE_KEY }}
-        run: terraform init -reconfigure
+        run: terraform init 
 
       - name: Apply Terraform
         env:
