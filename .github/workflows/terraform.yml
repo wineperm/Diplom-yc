@@ -31,8 +31,11 @@ jobs:
 
       - name: Set up Terraform backend
         run: |
-          export TFSTATE_KEY="my-project/terraform-$(date +%Y%m%d%H%M%S).tfstate"
+          export TFSTATE_KEY="terraform.tfstate"
           echo "TFSTATE_KEY=$TFSTATE_KEY" >> $GITHUB_ENV
+          echo "TF_VAR_tfstate_key=$TFSTATE_KEY" >> $GITHUB_ENV
+          echo "TF_VAR_yc_access_key=${{ secrets.YC_ACCESS_KEY }}" >> $GITHUB_ENV
+          echo "TF_VAR_yc_secret_key=${{ secrets.YC_SECRET_KEY }}" >> $GITHUB_ENV
 
       - name: Initialize Terraform
         env:
