@@ -84,59 +84,62 @@ jobs:
 
     - name: Generate Ansible inventory on the first master host
       run: |
-        MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "
-          mkdir -p kubespray/inventory/mycluster
-          MASTER_IPS=$(terraform output -json master_ips)
-          WORKER_IPS=$(terraform output -json worker_ips)
-          python3 - <<EOF
-import json
-from jinja2 import Template
-masters = json.loads('$MASTER_IPS')
-workers = json.loads('$WORKER_IPS')
-template = Template('''
-all:
-  hosts:
-    {% for master in masters %}
-    k8s-master-{{ loop.index }}:
-      ansible_host: {{ master }}
-      ip: {{ master }}
-      access_ip: {{ master }}
-    {% endfor %}
-    {% for worker in workers %}
-    k8s-worker-{{ loop.index }}:
-      ansible_host: {{ worker }}
-      ip: {{ worker }}
-      access_ip: {{ worker }}
-    {% endfor %}
-  children:
-    kube_control_plane:
-      hosts:
-        {% for master in masters %}
-        k8s-master-{{ loop.index }}:
-        {% endfor %}
-    kube_node:
-      hosts:
-        {% for worker in workers %}
-        k8s-worker-{{ loop.index }}:
-        {% endfor %}
-    etcd:
-      hosts:
-        {% for master in masters %}
-        k8s-master-{{ loop.index }}:
-        {% endfor %}
-    k8s_cluster:
-      children:
-        kube_control_plane:
-        kube_node:
-    calico_rr:
-      hosts: {}
-''')
-with open('kubespray/inventory/mycluster/hosts.yaml', 'w') as f:
-    f.write(template.render(masters=masters, workers=workers))
-EOF
-        "
-
+        git clone https://github.com/kubernetes-sigs/kubespray.git
+        cd kubespray
+        pip3 install -r requirements.txt
+    - name: Generate Ansible Inventory
+      run: |
+        MASTER_IPS=$(terraform output -json master_ips)
+        WORKER_IPS=$(terraform output -json worker_ips)
+        python3 - <<EOF
+        import json
+        from jinja2 import Template
+        
+        masters = json.loads('$MASTER_IPS')
+        workers = json.loads('$WORKER_IPS')
+        
+        template = Template('''
+        all:
+          hosts:
+            {% for master in masters %}
+            k8s-master-{{ loop.index }}:
+              ansible_host: {{ master }}
+              ip: {{ master }}
+              access_ip: {{ master }}
+            {% endfor %}
+            {% for worker in workers %}
+            k8s-worker-{{ loop.index }}:
+              ansible_host: {{ worker }}
+              ip: {{ worker }}
+              access_ip: {{ worker }}
+            {% endfor %}
+          children:
+            kube_control_plane:
+              hosts:
+                {% for master in masters %}
+                k8s-master-{{ loop.index }}:
+                {% endfor %}
+            kube_node:
+              hosts:
+                {% for worker in workers %}
+                k8s-worker-{{ loop.index }}:
+                {% endfor %}
+            etcd:
+              hosts:
+                {% for master in masters %}
+                k8s-master-{{ loop.index }}:
+                {% endfor %}
+            k8s_cluster:
+              children:
+                kube_control_plane:
+                kube_node:
+            calico_rr:
+              hosts: ***
+        ''')
+        with open('kubespray/inventory/mycluster/hosts.yaml', 'w') as f:
+            f.write(template.render(masters=masters, workers=workers))
+        EOF
+        
     - name: Display Ansible Inventory
       run: |
         MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
