@@ -132,14 +132,14 @@ jobs:
             calico_rr:
               hosts: {}
         ''')
-        with open('~/kubespray/inventory/mycluster/hosts.yaml', 'w') as f:
+        with open('kubespray/inventory/mycluster/hosts.yaml', 'w') as f:
             f.write(template.render(masters=masters, workers=workers))
         EOF
         
     - name: Display Ansible Inventory
       run: |
         MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "~/kubespray/inventory/mycluster/"
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "kubespray/inventory/mycluster/hosts.yaml"
 
     - name: Clean up on failure
       if: failure()
