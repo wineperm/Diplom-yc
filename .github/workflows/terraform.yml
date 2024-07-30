@@ -84,26 +84,26 @@ jobs:
 
       - name: Generate hosts.yaml
         run: |
-          MASTER_IPS=$(terraform output -json master_ips | jq -c '.')
-          WORKER_IPS=$(terraform output -json worker_ips | jq -c '.')
+          INTERNAL_MASTER_IPS=$(terraform output -json internal_master_ips | jq -c '.')
+          INTERNAL_WORKER_IPS=$(terraform output -json internal_worker_ips | jq -c '.')
 
           python3 -c '
           import yaml
           import json
           import os
 
-          master_ips = json.loads(os.environ["MASTER_IPS"])
-          worker_ips = json.loads(os.environ["WORKER_IPS"])
+          internal_master_ips = json.loads(os.environ["INTERNAL_MASTER_IPS"])
+          internal_worker_ips = json.loads(os.environ["INTERNAL_WORKER_IPS"])
 
           hosts = {}
-          for i, ip in enumerate(master_ips):
+          for i, ip in enumerate(internal_master_ips):
               hosts[f"k8s-master-{i}"] = {
                   "ansible_host": ip,
                   "ip": ip,
                   "access_ip": ip
               }
 
-          for i, ip in enumerate(worker_ips):
+          for i, ip in enumerate(internal_worker_ips):
               hosts[f"k8s-worker-{i}"] = {
                   "ansible_host": ip,
                   "ip": ip,
@@ -115,13 +115,13 @@ jobs:
                   "hosts": hosts,
                   "children": {
                       "kube_control_plane": {
-                          "hosts": {f"k8s-master-{i}": None for i in range(len(master_ips))}
+                          "hosts": {f"k8s-master-{i}": None for i in range(len(internal_master_ips))}
                       },
                       "kube_node": {
-                          "hosts": {f"k8s-worker-{i}": None for i in range(len(worker_ips))}
+                          "hosts": {f"k8s-worker-{i}": None for i in range(len(internal_worker_ips))}
                       },
                       "etcd": {
-                          "hosts": {f"k8s-master-{i}": None for i in range(len(master_ips))}
+                          "hosts": {f"k8s-master-{i}": None for i in range(len(internal_master_ips))}
                       },
                       "k8s_cluster": {
                           "children": {
@@ -140,8 +140,8 @@ jobs:
               yaml.dump(data, file, default_flow_style=False, sort_keys=False)
           '
         env:
-          MASTER_IPS: ${{ env.MASTER_IPS }}
-          WORKER_IPS: ${{ env.WORKER_IPS }}
+          INTERNAL_MASTER_IPS: ${{ env.INTERNAL_MASTER_IPS }}
+          INTERNAL_WORKER_IPS: ${{ env.INTERNAL_WORKER_IPS }}
 
       - name: Copy hosts.yaml to the first master host
         run: |
