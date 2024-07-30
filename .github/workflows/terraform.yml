@@ -34,8 +34,8 @@ jobs:
         TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
         TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
         TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
-        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
         TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
       run: terraform init
 
     - name: Apply Terraform
@@ -43,9 +43,47 @@ jobs:
         TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
         TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
         TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
-        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
         TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
       run: terraform apply -auto-approve
+
+    - name: Get Master IPs
+      id: get_master_ips
+      run: echo "::set-output name=ips::$(terraform output -raw master_ips)"
+
+    - name: Get Worker IPs
+      id: get_worker_ips
+      run: echo "::set-output name=ips::$(terraform output -raw worker_ips)"
+
+    - name: Install kubeadm on masters
+      run: |
+        for host in ${{ steps.get_master_ips.outputs.ips }}; do
+          ssh -o StrictHostKeyChecking=no ubuntu@$host 'sudo apt-get update && sudo apt-get install -y apt-transport-https ca-certificates curl && curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add - && echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list && sudo apt-get update && sudo apt-get install -y kubelet kubeadm kubectl && sudo apt-mark hold kubelet kubeadm kubectl'
+        done
+
+    - name: Initialize kubeadm on first master
+      run: |
+        ssh -o StrictHostKeyChecking=no ubuntu@${{ steps.get_master_ips.outputs.ips[0] }} 'sudo kubeadm init --pod-network-cidr=10.244.0.0/16'
+
+    - name: Join other masters
+      run: |
+        JOIN_COMMAND=$(ssh -o StrictHostKeyChecking=no ubuntu@${{ steps.get_master_ips.outputs.ips[0] }} 'sudo kubeadm token create --print-join-command')
+        for host in ${{ steps.get_master_ips.outputs.ips[1] }} ${{ steps.get_master_ips.outputs.ips[2] }}; do
+          ssh -o StrictHostKeyChecking=no ubuntu@$host "$JOIN_COMMAND --control-plane"
+        done
+
+    - name: Install kubeadm on workers
+      run: |
+        for host in ${{ steps.get_worker_ips.outputs.ips }}; do
+          ssh -o StrictHostKeyChecking=no ubuntu@$host 'sudo apt-get update && sudo apt-get install -y apt-transport-https ca-certificates curl && curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add - && echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list && sudo apt-get update && sudo apt-get install -y kubelet kubeadm kubectl && sudo apt-mark hold kubelet kubeadm kubectl'
+        done
+
+    - name: Join workers
+      run: |
+        JOIN_COMMAND=$(ssh -o StrictHostKeyChecking=no ubuntu@${{ steps.get_master_ips.outputs.ips[0] }} 'sudo kubeadm token create --print-join-command')
+        for host in ${{ steps.get_worker_ips.outputs.ips }}; do
+          ssh -o StrictHostKeyChecking=no ubuntu@$host "$JOIN_COMMAND"
+        done
 
     - name: Clean up on failure
       if: failure()
@@ -53,8 +91,8 @@ jobs:
         TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
         TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
         TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
-        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
         TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
       run: terraform destroy -auto-approve
 
     - name: Display Success Message
@@ -67,8 +105,8 @@ jobs:
         TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
         TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
         TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
-        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
         TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
       run: terraform destroy -auto-approve
 
     - name: Clean up SSH keys
