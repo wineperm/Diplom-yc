@@ -26,34 +26,6 @@ resource "yandex_compute_instance" "k8s-master" {
     ssh-keys = "ubuntu:${var.ssh_public_key}"
   }
   service_account_id = var.yc_service_account_id
-
-  provisioner "file" {
-    source      = "~/.ssh/id_ed25519"
-    destination = "/home/ubuntu/.ssh/id_ed25519"
-
-    connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      host        = self.network_interface.0.nat_ip_address
-      private_key = file("~/.ssh/id_ed25519")
-    }
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "chmod 600 /home/ubuntu/.ssh/id_ed25519",
-      "mkdir -p /home/ubuntu/.ssh",
-      "echo '${var.ssh_public_key}' >> /home/ubuntu/.ssh/authorized_keys",
-      "chmod 600 /home/ubuntu/.ssh/authorized_keys"
-    ]
-
-    connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      host        = self.network_interface.0.nat_ip_address
-      private_key = file("~/.ssh/id_ed25519")
-    }
-  }
 }
 
 resource "yandex_compute_instance" "k8s-worker" {
@@ -84,32 +56,4 @@ resource "yandex_compute_instance" "k8s-worker" {
     ssh-keys = "ubuntu:${var.ssh_public_key}"
   }
   service_account_id = var.yc_service_account_id
-
-  provisioner "file" {
-    source      = "~/.ssh/id_ed25519"
-    destination = "/home/ubuntu/.ssh/id_ed25519"
-
-    connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      host        = self.network_interface.0.nat_ip_address
-      private_key = file("~/.ssh/id_ed25519")
-    }
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "chmod 600 /home/ubuntu/.ssh/id_ed25519",
-      "mkdir -p /home/ubuntu/.ssh",
-      "echo '${var.ssh_public_key}' >> /home/ubuntu/.ssh/authorized_keys",
-      "chmod 600 /home/ubuntu/.ssh/authorized_keys"
-    ]
-
-    connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      host        = self.network_interface.0.nat_ip_address
-      private_key = file("~/.ssh/id_ed25519")
-    }
-  }
 }
