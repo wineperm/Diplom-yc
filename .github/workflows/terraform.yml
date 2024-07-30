@@ -82,6 +82,64 @@ jobs:
           MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "cd kubespray && cp -rfp inventory/sample inventory/mycluster"
 
+      - name: Generate hosts.yaml
+        run: |
+          MASTER_IPS=$(terraform output -json master_ips | jq -r '.[]')
+          WORKER_IPS=$(terraform output -json worker_ips | jq -r '.[]')
+
+          python3 -c '
+          import yaml
+          import json
+          import os
+
+          master_ips = json.loads(os.environ["MASTER_IPS"])
+          worker_ips = json.loads(os.environ["WORKER_IPS"])
+
+          hosts = {}
+          for i, ip in enumerate(master_ips):
+              hosts[f"k8s-master-{i}"] = {
+                  "ansible_host": ip,
+                  "ip": ip,
+                  "access_ip": ip
+              }
+
+          for i, ip in enumerate(worker_ips):
+              hosts[f"k8s-worker-{i}"] = {
+                  "ansible_host": ip,
+                  "ip": ip,
+                  "access_ip": ip
+              }
+
+          data = {
+              "all": {
+                  "hosts": hosts,
+                  "children": {
+                      "kube_control_plane": {
+                          "hosts": {f"k8s-master-{i}": None for i in range(len(master_ips))}
+                      },
+                      "kube_node": {
+                          "hosts": {f"k8s-worker-{i}": None for i in range(len(worker_ips))}
+                      },
+                      "etcd": {
+                          "hosts": {f"k8s-master-{i}": None for i in range(len(master_ips))}
+                      },
+                      "k8s_cluster": {
+                          "children": {
+                              "kube_control_plane": {},
+                              "kube_node": {}
+                          }
+                      },
+                      "calico_rr": {
+                          "hosts": {}
+                      }
+                  }
+              }
+          }
+
+          with open("hosts.yaml", "w") as file:
+              yaml.dump(data, file, default_flow_style=False, sort_keys=False)
+          '
+
       - name: Copy hosts.yaml to the first master host
         run: |
           MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
@@ -95,7 +153,7 @@ jobs:
       - name: Run Ansible Playbook on the first master host
         run: |
           MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "source ~/kubespray-env/bin/activate && cd kubespray && ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -v"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "source ~/kubespray-env/bin/activate && cd kubespray && ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -vvv"
 
       - name: Clean up on failure
         if: failure()
