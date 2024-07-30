@@ -6,16 +6,14 @@ terraform {
   }
   required_version = ">=0.13"
 
+terraform {
   backend "s3" {
+    bucket = "terraform-state-bucket"
+    key    = "terraform.tfstate"
+    region = "ru-central1"
+    access_key = yandex_iam_service_account_static_access_key.sa-static-key.access_key
+    secret_key = yandex_iam_service_account_static_access_key.sa-static-key.secret_key
     endpoint = "storage.yandexcloud.net"
-    bucket   = "wineperm12354464"
-    region   = "ru-central1"
-    key      = "terraform.tfstate"
-    access_key = var.yc_access_key
-    secret_key = var.yc_secret_key
-
-    skip_region_validation      = true
-    skip_credentials_validation = true
   }
 }
 
