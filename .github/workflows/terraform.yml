@@ -7,131 +7,129 @@ jobs:
   terraform:
     runs-on: ubuntu-22.04
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4.1.7
+      - name: Checkout code
+        uses: actions/checkout@v4.1.7
 
-    - name: Set up Terraform
-      uses: hashicorp/setup-terraform@v3.1.1
-      with:
-        terraform_version: v1.9.0
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3.1.1
+        with:
+          terraform_version: v1.9.0
 
-    - name: Set up SSH keys
-      env:
-        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-        SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
-        SERVICE_ACCOUNT_KEY_FILE: ${{ secrets.SERVICE_ACCOUNT_KEY_FILE }}
-      run: |
-        mkdir -p ~/.ssh
-        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
-        chmod 600 ~/.ssh/id_ed25519
-        echo "$SSH_PUBLIC_KEY" > ~/.ssh/id_ed25519.pub
-        chmod 600 ~/.ssh/id_ed25519.pub
-        echo "$SERVICE_ACCOUNT_KEY_FILE" > ~/.ssh/authorized_key.json
-        chmod 600 ~/.ssh/authorized_key.json
+      - name: Set up SSH keys
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
+          SERVICE_ACCOUNT_KEY_FILE: ${{ secrets.SERVICE_ACCOUNT_KEY_FILE }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "$SSH_PUBLIC_KEY" > ~/.ssh/id_ed25519.pub
+          chmod 600 ~/.ssh/id_ed25519.pub
+          echo "$SERVICE_ACCOUNT_KEY_FILE" > ~/.ssh/authorized_key.json
+          chmod 600 ~/.ssh/authorized_key.json
 
-    - name: Initialize Terraform
-      env:
-        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
-        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
-        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
-        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
-        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
-      run: terraform init
+      - name: Initialize Terraform
+        env:
+          TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+          TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+          TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+          TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        run: terraform init
 
-    - name: Apply Terraform
-      env:
-        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
-        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
-        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
-        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
-        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
-      run: terraform apply -auto-approve
+      - name: Apply Terraform
+        env:
+          TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+          TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+          TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+          TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        run: terraform apply -auto-approve
 
-    - name: Wait for SSH connectivity to masters and workers
-      run: |
-        MASTER_IPS=$(terraform output -json master_ips | jq -r '.[]')
-        WORKER_IPS=$(terraform output -json worker_ips | jq -r '.[]')
-        ALL_IPS="$MASTER_IPS $WORKER_IPS"
-        for host in $ALL_IPS; do
-          while ! nc -zv $host 22; do
-            echo "Waiting for SSH connection to $host..."
-            sleep 10
+      - name: Wait for SSH connectivity to masters and workers
+        run: |
+          MASTER_IPS=$(terraform output -json master_ips | jq -r '.[]')
+          WORKER_IPS=$(terraform output -json worker_ips | jq -r '.[]')
+          ALL_IPS="$MASTER_IPS $WORKER_IPS"
+          for host in $ALL_IPS; do
+            while ! nc -zv $host 22; do
+              echo "Waiting for SSH connection to $host..."
+              sleep 10
+            done
+            echo "SSH connection to $host established"
           done
-          echo "SSH connection to $host established"
-        done
 
-    - name: Copy SSH key to the first master host
-      env:
-        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-      run: |
-        MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "mkdir -p ~/.ssh && echo \"$SSH_PRIVATE_KEY\" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519"
+      - name: Generate Ansible Inventory
+        run: |
+          MASTER_IPS=$(terraform output -json master_ips)
+          WORKER_IPS=$(terraform output -json worker_ips)
+          terraform output -json | jq -r '.master_ips.value[]' > master_ips.txt
+          terraform output -json | jq -r '.worker_ips.value[]' > worker_ips.txt
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install ruamel.yaml
+          python3 scripts/generate_inventory.py master_ips.txt worker_ips.txt > inventory/mycluster/hosts.yaml
 
-    - name: Set up Python on the first master host
-      run: |
-        MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "sudo apt-get update && sudo apt-get install -y python3-venv && python3 -m venv ~/kubespray-env && source ~/kubespray-env/bin/activate && pip install -r https://raw.githubusercontent.com/kubernetes-sigs/kubespray/master/requirements.txt"
+      - name: Copy SSH key to the first master host
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "mkdir -p ~/.ssh && echo \"$SSH_PRIVATE_KEY\" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519"
 
-    - name: Clone Kubespray repository on the first master host
-      run: |
-        MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "source ~/kubespray-env/bin/activate && git clone https://github.com/kubernetes-sigs/kubespray.git && cd kubespray && pip install -r requirements.txt"
+      - name: Copy Ansible Inventory to the first master host
+        run: |
+          MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 inventory/mycluster/hosts.yaml ubuntu@$MASTER_IP:/inventory/mycluster/hosts.yaml
 
-    - name: Copy sample inventory to mycluster on the first master host
-      run: |
-        MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "cd kubespray && cp -rfp inventory/sample inventory/mycluster"
+      - name: Set up Python on the first master host
+        run: |
+          MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "sudo apt-get update && sudo apt-get install -y python3-venv && python3 -m venv ~/kubespray-env && source ~/kubespray-env/bin/activate && pip install -r https://raw.githubusercontent.com/kubernetes-sigs/kubespray/master/requirements.txt"
 
-    - name: Copy hosts.yaml.tpl to the first master host
-      run: |
-        MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
-        scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 templates/hosts.yaml.tpl ubuntu@$MASTER_IP:/home/ubuntu/kubespray/inventory/mycluster/hosts.yaml.tpl
+      - name: Clone Kubespray repository on the first master host
+        run: |
+          MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "source ~/kubespray-env/bin/activate && git clone https://github.com/kubernetes-sigs/kubespray.git && cd kubespray && pip install -r requirements.txt"
 
-    - name: Generate Ansible Inventory
-      run: |
-        MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
-        MASTER_IPS=$(terraform output -json master_ips)
-        WORKER_IPS=$(terraform output -json worker_ips)
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "source ~/kubespray-env/bin/activate && pip install ruamel.yaml && cd kubespray && CONFIG_FILE=inventory/mycluster/hosts.yaml python3 contrib/inventory_builder/inventory.py $MASTER_IPS $WORKER_IPS"
+      - name: Copy sample inventory to mycluster on the first master host
+        run: |
+          MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "cd kubespray && cp -rfp inventory/sample inventory/mycluster"
 
-    - name: Display Ansible Inventory
-      run: |
-        MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "
-          if [ -f kubespray/inventory/mycluster/hosts.yaml ]; then
-            cat kubespray/inventory/mycluster/hosts.yaml
-          else
-            echo 'File kubespray/inventory/mycluster/hosts.yaml does not exist'
-          fi
-        "
+      - name: Display Ansible Inventory
+        run: |
+          MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "cat kubespray/inventory/mycluster/hosts.yaml"
 
-    - name: Clean up on failure
-      if: failure()
-      env:
-        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
-        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
-        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
-        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
-        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
-      run: terraform destroy -auto-approve
+      - name: Clean up on failure
+        if: failure()
+        env:
+          TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+          TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+          TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+          TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        run: terraform destroy -auto-approve
 
-    - name: Display Success Message
-      if: success()
-      run: echo "ВСЕ НОРМАЛЬНО"
+      - name: Display Success Message
+        if: success()
+        run: echo "ВСЕ НОРМАЛЬНО"
 
-    - name: Destroy Infrastructure
-      if: always()
-      env:
-        TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
-        TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
-        TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
-        TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
-        TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
-      run: terraform destroy -auto-approve
+      - name: Destroy Infrastructure
+        if: always()
+        env:
+          TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+          TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+          TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+          TF_VAR_service_account_key_file: ~/.ssh/authorized_key.json
+        run: terraform destroy -auto-approve
 
-    - name: Clean up SSH keys
-      if: always()
-      run: |
-        rm -f ~/.ssh/id_ed25519
-        rm -f ~/.ssh/id_ed25519.pub
-        rm -f ~/.ssh/authorized_key.json
+      - name: Clean up SSH keys
+        if: always()
+        run: |
+          rm -f ~/.ssh/id_ed25519
+          rm -f ~/.ssh/id_ed25519.pub
+          rm -f ~/.ssh/authorized_key.json
