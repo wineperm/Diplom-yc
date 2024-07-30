@@ -154,7 +154,7 @@ jobs:
       - name: Run Ansible Playbook on the first master host
         run: |
           MASTER_IP=$(terraform output -json master_external_ips | jq -r '.[0]')
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "source ~/kubespray-env/bin/activate && cd kubespray && ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -v"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "source ~/kubespray-env/bin/activate && cd kubespray && ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -vvv"
 
       - name: Clean up on failure
         if: failure()
