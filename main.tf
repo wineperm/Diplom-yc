@@ -65,4 +65,3 @@ resource "local_file" "hosts_yaml" {
   })
   filename = "${path.module}/hosts.yaml"
 }
-
