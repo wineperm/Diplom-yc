@@ -82,13 +82,9 @@ jobs:
         MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
         ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "cd kubespray && cp -rfp inventory/sample inventory/mycluster"
 
-    - name: Generate Ansible inventory on the first master host
-      run: |
-        git clone https://github.com/kubernetes-sigs/kubespray.git
-        cd kubespray
-        pip3 install -r requirements.txt
     - name: Generate Ansible Inventory
       run: |
+        mkdir -p kubespray/inventory/mycluster
         MASTER_IPS=$(terraform output -json master_ips)
         WORKER_IPS=$(terraform output -json worker_ips)
         python3 - <<EOF
