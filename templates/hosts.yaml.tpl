@@ -1,32 +1,32 @@
 all:
   hosts:
-    %{ for i, ip in master_ips ~}
-    node${i + 1}:
-      ansible_host: ${ip}
-      ip: ${ip}
-      access_ip: ${ip}
+    %{ for i, host in master_hosts ~}
+    ${host.name}:
+      ansible_host: ${host.ip}
+      ip: ${host.ip}
+      access_ip: ${host.ip}
     %{ endfor ~}
-    %{ for i, ip in worker_ips ~}
-    node${i + ${length(master_ips)} + 1}:
-      ansible_host: ${ip}
-      ip: ${ip}
-      access_ip: ${ip}
+    %{ for i, host in worker_hosts ~}
+    ${host.name}:
+      ansible_host: ${host.ip}
+      ip: ${host.ip}
+      access_ip: ${host.ip}
     %{ endfor ~}
   children:
     kube_control_plane:
       hosts:
-        %{ for i, ip in master_ips ~}
-        node${i + 1}:
+        %{ for i, host in master_hosts ~}
+        ${host.name}:
         %{ endfor ~}
     kube_node:
       hosts:
-        %{ for i, ip in worker_ips ~}
-        node${i + ${length(master_ips)} + 1}:
+        %{ for i, host in worker_hosts ~}
+        ${host.name}:
         %{ endfor ~}
     etcd:
       hosts:
-        %{ for i, ip in master_ips ~}
-        node${i + 1}:
+        %{ for i, host in master_hosts ~}
+        ${host.name}:
         %{ endfor ~}
     k8s_cluster:
       children:
