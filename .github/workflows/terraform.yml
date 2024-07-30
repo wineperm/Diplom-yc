@@ -55,6 +55,18 @@ jobs:
       id: get_worker_ips
       run: echo "::set-output name=ips::$(terraform output -json worker_ips | jq -r '.[]')"
 
+    - name: Check SSH connectivity to masters
+      run: |
+        for host in ${{ steps.get_master_ips.outputs.ips }}; do
+          nc -zv $host 22 || echo "SSH connection to $host failed"
+        done
+
+    - name: Check SSH connectivity to workers
+      run: |
+        for host in ${{ steps.get_worker_ips.outputs.ips }}; do
+          nc -zv $host 22 || echo "SSH connection to $host failed"
+        done
+
     - name: Install kubeadm on masters
       run: |
         for host in ${{ steps.get_master_ips.outputs.ips }}; do
