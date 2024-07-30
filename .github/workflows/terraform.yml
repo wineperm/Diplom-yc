@@ -55,6 +55,9 @@ jobs:
       id: get_worker_ips
       run: echo "::set-output name=ips::$(terraform output -json worker_ips | jq -r '.[]')"
 
+    - name: Wait for 90 seconds
+      run: sleep 90
+
     - name: Check SSH connectivity to masters
       run: |
         for host in ${{ steps.get_master_ips.outputs.ips }}; do
