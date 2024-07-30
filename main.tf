@@ -58,7 +58,6 @@ resource "yandex_compute_instance" "k8s-worker" {
   service_account_id = var.yc_service_account_id
 }
 
-// Генерация файла инвентаря Ansible
 resource "local_file" "ansible_inventory" {
   filename = "inventory/mycluster/hosts.yaml"
   content  = templatefile("${path.module}/templates/hosts.yaml.tpl", {
