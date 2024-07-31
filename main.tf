@@ -1,3 +1,63 @@
+resource "yandex_compute_instance" "k8s-master" {
+  count       = 1
+  name        = "k8s-master-${count.index}"
+  platform_id = "standard-v2"
+  zone        = element(["ru-central1-a", "ru-central1-b", "ru-central1-d"], count.index)
+  resources {
+    cores         = 2
+    memory        = 4
+    core_fraction = 5
+  }
+  boot_disk {
+    initialize_params {
+      image_id = "fd8k2vlv3b3duv812ama"
+      type     = "network-hdd"
+      size     = 10
+    }
+  }
+  network_interface {
+    subnet_id = element([yandex_vpc_subnet.master-subnet-a.id, yandex_vpc_subnet.master-subnet-b.id, yandex_vpc_subnet.master-subnet-d.id], count.index)
+    nat       = true
+  }
+  scheduling_policy {
+    preemptible = true
+  }
+  metadata = {
+    ssh-keys = "ubuntu:${var.ssh_public_key}"
+  }
+  service_account_id = var.yc_service_account_id
+}
+
+resource "yandex_compute_instance" "k8s-worker" {
+  count       = 1
+  name        = "k8s-worker-${count.index}"
+  platform_id = "standard-v2"
+  zone        = element(["ru-central1-a", "ru-central1-b", "ru-central1-d"], count.index % 3)
+  resources {
+    cores         = 2
+    memory        = 4
+    core_fraction = 5
+  }
+  boot_disk {
+    initialize_params {
+      image_id = "fd8k2vlv3b3duv812ama"
+      type     = "network-hdd"
+      size     = 10
+    }
+  }
+  network_interface {
+    subnet_id = element([yandex_vpc_subnet.worker-subnet-a.id, yandex_vpc_subnet.worker-subnet-b.id, yandex_vpc_subnet.worker-subnet-d.id], count.index % 3)
+    nat       = false  # Установите nat в false для рабочих узлов
+  }
+  scheduling_policy {
+    preemptible = true
+  }
+  metadata = {
+    ssh-keys = "ubuntu:${var.ssh_public_key}"
+  }
+  service_account_id = var.yc_service_account_id
+}
+
 resource "null_resource" "check_ssh_connection" {
   depends_on = [yandex_compute_instance.k8s-master, yandex_compute_instance.k8s-worker]
 
@@ -29,77 +89,65 @@ resource "null_resource" "run_additional_commands" {
   }
 }
 
-resource "null_resource" "generate_hosts_yaml" {
-  depends_on = [null_resource.run_additional_commands]
-
-  provisioner "local-exec" {
-    command = <<EOT
-cat <<EOF > hosts.yaml
+data "template_file" "hosts_yaml" {
+  template = <<EOT
 all:
   hosts:
-EOF
-
-for i in range(length(yandex_compute_instance.k8s-master)):
-  cat <<EOF >> hosts.yaml
-    node${i + 1}:
-      ansible_host: ${yandex_compute_instance.k8s-master[i].network_interface.0.ip_address}
-      ip: ${yandex_compute_instance.k8s-master[i].network_interface.0.ip_address}
-      access_ip: ${yandex_compute_instance.k8s-master[i].network_interface.0.ip_address}
-EOF
-
-for i in range(length(yandex_compute_instance.k8s-worker)):
-  cat <<EOF >> hosts.yaml
-    node${i + length(yandex_compute_instance.k8s-master) + 1}:
-      ansible_host: ${yandex_compute_instance.k8s-worker[i].network_interface.0.ip_address}
-      ip: ${yandex_compute_instance.k8s-worker[i].network_interface.0.ip_address}
-      access_ip: ${yandex_compute_instance.k8s-worker[i].network_interface.0.ip_address}
-EOF
-
-cat <<EOF >> hosts.yaml
+    %{ for host in master_hosts ~}
+    ${host.name}:
+      ansible_host: ${host.ip}
+      ip: ${host.ip}
+      access_ip: ${host.ip}
+    %{ endfor ~}
+    %{ for host in worker_hosts ~}
+    ${host.name}:
+      ansible_host: ${host.ip}
+      ip: ${host.ip}
+      access_ip: ${host.ip}
+    %{ endfor ~}
   children:
     kube_control_plane:
       hosts:
-EOF
-
-for i in range(length(yandex_compute_instance.k8s-master)):
-  cat <<EOF >> hosts.yaml
-        node${i + 1}:
-EOF
-
-cat <<EOF >> hosts.yaml
+        %{ for host in master_hosts ~}
+        ${host.name}:
+        %{ endfor ~}
     kube_node:
       hosts:
-EOF
-
-for i in range(length(yandex_compute_instance.k8s-worker)):
-  cat <<EOF >> hosts.yaml
-        node${i + length(yandex_compute_instance.k8s-master) + 1}:
-EOF
-
-cat <<EOF >> hosts.yaml
+        %{ for host in worker_hosts ~}
+        ${host.name}:
+        %{ endfor ~}
     etcd:
       hosts:
-EOF
-
-for i in range(length(yandex_compute_instance.k8s-master)):
-  cat <<EOF >> hosts.yaml
-        node${i + 1}:
-EOF
-
-cat <<EOF >> hosts.yaml
+        %{ for host in master_hosts ~}
+        ${host.name}:
+        %{ endfor ~}
     k8s_cluster:
       children:
         kube_control_plane:
         kube_node:
     calico_rr:
       hosts: {}
-EOF
 EOT
+
+  vars = {
+    master_hosts = [for master in yandex_compute_instance.k8s-master : {
+      name = master.name
+      ip   = master.network_interface.0.ip_address
+    }]
+    worker_hosts = [for worker in yandex_compute_instance.k8s-worker : {
+      name = worker.name
+      ip   = worker.network_interface.0.ip_address
+    }]
   }
 }
 
+resource "local_file" "hosts_yaml" {
+  content  = data.template_file.hosts_yaml.rendered
+  filename = "hosts.yaml"
+}
+
 resource "null_resource" "copy_files_to_master" {
-  depends_on = [null_resource.generate_hosts_yaml]
+  depends_on = [local_file.hosts_yaml]
 
   provisioner "file" {
     source      = "hosts.yaml"
