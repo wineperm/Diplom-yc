@@ -26,6 +26,18 @@ resource "yandex_compute_instance" "k8s-master" {
     ssh-keys = "ubuntu:${var.ssh_public_key}"
   }
   service_account_id = var.yc_service_account_id
+
+  provisioner "remote-exec" {
+    inline = [
+      "echo 'SSH connection successful'"
+    ]
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.ssh_private_key_path)
+      host        = self.network_interface.0.nat_ip_address
+    }
+  }
 }
 
 resource "yandex_compute_instance" "k8s-worker" {
