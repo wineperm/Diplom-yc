@@ -63,7 +63,7 @@ resource "null_resource" "check_ssh_connection" {
   depends_on = [yandex_compute_instance.k8s-master, yandex_compute_instance.k8s-worker]
 
   provisioner "local-exec" {
-    command = "until ssh -o ConnectTimeout=5 -i ${var.ssh_private_key_path} ubuntu@${yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address} echo 'SSH connection successful'; do sleep 5; done"
+    command = "until ssh -o ConnectTimeout=5 -i ${var.ssh_private_key_path} ubuntu@${yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address} echo 'SSH connection successful'; do sleep 10; done"
   }
 }
 
