@@ -59,6 +59,7 @@ resource "yandex_compute_instance" "k8s-worker" {
 }
 
 
+
 resource "null_resource" "check_ssh_connection" {
   depends_on = [yandex_compute_instance.k8s-master, yandex_compute_instance.k8s-worker]
 
