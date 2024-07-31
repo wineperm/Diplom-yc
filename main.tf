@@ -57,27 +57,3 @@ resource "yandex_compute_instance" "k8s-worker" {
   }
   service_account_id = var.yc_service_account_id
 }
-
-resource "local_file" "hosts_yaml" {
-  content = templatefile("${path.module}/templates/hosts.yaml.tpl", {
-    master_hosts = [for i, instance in yandex_compute_instance.k8s-master : {
-      name = instance.name
-      ip   = instance.network_interface.0.ip_address  # Используйте внутренний IP для мастер-узлов
-    }]
-    worker_hosts = [for i, instance in yandex_compute_instance.k8s-worker : {
-      name = instance.name
-      ip   = instance.network_interface.0.ip_address  # Используйте внутренний IP для рабочих узлов
-    }]
-  })
-  filename = "${path.module}/hosts.yaml"
-}
-resource "null_resource" "run_ansible_playbook" {
-  provisioner "local-exec" {
-    command = <<EOT
-      MASTER_IP=$(terraform output -json master_external_ips | jq -r '.[0]')
-      ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "source ~/kubespray-env/bin/activate && cd kubespray && ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -vvv"
-    EOT
-  }
-
-  depends_on = [yandex_compute_instance.k8s-master, yandex_compute_instance.k8s-worker, local_file.hosts_yaml]
-}
