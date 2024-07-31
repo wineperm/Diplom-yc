@@ -101,7 +101,7 @@ locals {
 }
 
 resource "local_file" "hosts_yaml" {
-  content = templatefile("\${path.module}/hosts.yaml.tpl", {
+  content = templatefile("${path.module}/hosts.yaml.tpl", {
     master_hosts = local.master_hosts
     worker_hosts = local.worker_hosts
   })
