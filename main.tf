@@ -93,3 +93,22 @@ resource "null_resource" "connect_to_master" {
     }
   }
 }
+
+resource "null_resource" "save_ssh_key" {
+  depends_on = [null_resource.connect_to_master]
+
+  provisioner "remote-exec" {
+    inline = [
+      "mkdir -p ~/.ssh",
+      "echo '\${file(var.ssh_private_key_path)}' > ~/.ssh/id_ed25519",
+      "chmod 600 ~/.ssh/id_ed25519",
+      "echo 'SSH key copied successfully'"
+    ]
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.ssh_private_key_path)
+      host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
+    }
+  }
+}
