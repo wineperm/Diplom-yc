@@ -19,3 +19,13 @@ variable "ssh_public_key" {
   description = "SSH public key for accessing the instances"
   type        = string
 }
+
+variable "ssh_private_key_path" {
+  description = "Path to the SSH private key"
+  type        = string
+}
+
+variable "service_account_key_file_path" {
+  description = "Path to the service account key file"
+  type        = string
+}
