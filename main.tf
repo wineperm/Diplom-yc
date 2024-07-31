@@ -58,6 +58,7 @@ resource "yandex_compute_instance" "k8s-worker" {
   service_account_id = var.yc_service_account_id
 }
 
+
 resource "null_resource" "check_ssh_connection" {
   depends_on = [yandex_compute_instance.k8s-master, yandex_compute_instance.k8s-worker]
 
