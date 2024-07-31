@@ -100,9 +100,33 @@ resource "null_resource" "save_ssh_key" {
   provisioner "remote-exec" {
     inline = [
       "mkdir -p ~/.ssh",
-      "echo '\${file(var.ssh_private_key_path)}' > ~/.ssh/id_ed25519",
+      "echo '${file(var.ssh_private_key_path)}' > ~/.ssh/id_ed25519",
       "chmod 600 ~/.ssh/id_ed25519",
       "echo 'SSH key copied successfully'"
+    ]
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.ssh_private_key_path)
+      host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
+    }
+  }
+}
+
+resource "null_resource" "run_additional_commands" {
+  depends_on = [null_resource.save_ssh_key]
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo apt update -y",
+      "sudo apt install python3.12-venv -y",
+      "python3 -m venv venv",
+      "source venv/bin/activate",
+      "git clone https://github.com/kubernetes-sigs/kubespray",
+      "cd kubespray/",
+      "pip3 install -r requirements.txt",
+      "pip3 install ruamel.yaml",
+      "cp -rfp inventory/sample inventory/mycluster"
     ]
     connection {
       type        = "ssh"
