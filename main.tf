@@ -89,60 +89,22 @@ resource "null_resource" "run_additional_commands" {
   }
 }
 
-data "template_file" "hosts_yaml" {
-  template = <<EOT
-all:
-  hosts:
-    %{ for host in master_hosts ~}
-    ${host.name}:
-      ansible_host: ${host.ip}
-      ip: ${host.ip}
-      access_ip: ${host.ip}
-    %{ endfor ~}
-    %{ for host in worker_hosts ~}
-    ${host.name}:
-      ansible_host: ${host.ip}
-      ip: ${host.ip}
-      access_ip: ${host.ip}
-    %{ endfor ~}
-  children:
-    kube_control_plane:
-      hosts:
-        %{ for host in master_hosts ~}
-        ${host.name}:
-        %{ endfor ~}
-    kube_node:
-      hosts:
-        %{ for host in worker_hosts ~}
-        ${host.name}:
-        %{ endfor ~}
-    etcd:
-      hosts:
-        %{ for host in master_hosts ~}
-        ${host.name}:
-        %{ endfor ~}
-    k8s_cluster:
-      children:
-        kube_control_plane:
-        kube_node:
-    calico_rr:
-      hosts: {}
-EOT
-
-  vars = {
-    master_hosts = [for master in yandex_compute_instance.k8s-master : {
-      name = master.name
-      ip   = master.network_interface.0.ip_address
-    }]
-    worker_hosts = [for worker in yandex_compute_instance.k8s-worker : {
-      name = worker.name
-      ip   = worker.network_interface.0.ip_address
-    }]
-  }
+locals {
+  master_hosts = [for master in yandex_compute_instance.k8s-master : {
+    name = master.name
+    ip   = master.network_interface.0.ip_address
+  }]
+  worker_hosts = [for worker in yandex_compute_instance.k8s-worker : {
+    name = worker.name
+    ip   = worker.network_interface.0.ip_address
+  }]
 }
 
 resource "local_file" "hosts_yaml" {
-  content  = data.template_file.hosts_yaml.rendered
+  content = templatefile("${path.module}/hosts.yaml.tpl", {
+    master_hosts = local.master_hosts
+    worker_hosts = local.worker_hosts
+  })
   filename = "hosts.yaml"
 }
 
