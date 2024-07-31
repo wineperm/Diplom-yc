@@ -69,3 +69,27 @@ resource "yandex_compute_instance" "k8s-worker" {
   }
   service_account_id = var.yc_service_account_id
 }
+
+resource "null_resource" "check_ssh_connection" {
+  depends_on = [yandex_compute_instance.k8s-master, yandex_compute_instance.k8s-worker]
+
+  provisioner "local-exec" {
+    command = "ssh -o ConnectTimeout=5 -i ${var.ssh_private_key_path} ubuntu@${yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address} echo 'SSH connection successful'"
+  }
+}
+
+resource "null_resource" "connect_to_master" {
+  depends_on = [null_resource.check_ssh_connection]
+
+  provisioner "remote-exec" {
+    inline = [
+      "echo 'SSH connection successful'"
+    ]
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.ssh_private_key_path)
+      host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
+    }
+  }
+}
