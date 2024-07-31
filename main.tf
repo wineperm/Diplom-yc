@@ -62,7 +62,7 @@ resource "null_resource" "check_ssh_connection" {
   depends_on = [yandex_compute_instance.k8s-master, yandex_compute_instance.k8s-worker]
 
   provisioner "local-exec" {
-    command = "ssh -o ConnectTimeout=5 -i ${var.ssh_private_key_path} ubuntu@${yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address} echo 'SSH connection successful'"
+    command = "until ssh -o ConnectTimeout=5 -i ${var.ssh_private_key_path} ubuntu@${yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address} echo 'SSH connection successful'; do sleep 5; done"
   }
 }
 
@@ -101,15 +101,31 @@ locals {
 }
 
 resource "local_file" "hosts_yaml" {
-  content = templatefile("${path.module}/hosts.yaml.tpl", {
+  content = templatefile("\${path.module}/hosts.yaml.tpl", {
     master_hosts = local.master_hosts
     worker_hosts = local.worker_hosts
   })
   filename = "hosts.yaml"
 }
 
+resource "null_resource" "create_directory_on_master" {
+  depends_on = [null_resource.run_additional_commands]
+
+  provisioner "remote-exec" {
+    inline = [
+      "mkdir -p /home/ubuntu/inventory/mycluster"
+    ]
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.ssh_private_key_path)
+      host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
+    }
+  }
+}
+
 resource "null_resource" "copy_files_to_master" {
-  depends_on = [local_file.hosts_yaml]
+  depends_on = [null_resource.create_directory_on_master, local_file.hosts_yaml]
 
   provisioner "file" {
     source      = "hosts.yaml"
