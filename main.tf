@@ -71,3 +71,13 @@ resource "local_file" "hosts_yaml" {
   })
   filename = "${path.module}/hosts.yaml"
 }
+resource "null_resource" "run_ansible_playbook" {
+  provisioner "local-exec" {
+    command = <<EOT
+      MASTER_IP=$(terraform output -json master_external_ips | jq -r '.[0]')
+      ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "source ~/kubespray-env/bin/activate && cd kubespray && ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -vvv"
+    EOT
+  }
+
+  depends_on = [yandex_compute_instance.k8s-master, yandex_compute_instance.k8s-worker, local_file.hosts_yaml]
+}
