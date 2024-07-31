@@ -39,7 +39,7 @@ jobs:
           TF_VAR_yc_access_key: ${{ secrets.YC_ACCESS_KEY }}
           TF_VAR_yc_secret_key: ${{ secrets.YC_SECRET_KEY }}
           TF_VAR_tfstate_key: ${{ env.TFSTATE_KEY }}
-        run: terraform init 
+        run: terraform init
 
       - name: Apply Terraform
         env:
@@ -157,11 +157,6 @@ jobs:
           MASTER_IP=$(terraform output -json master_external_ips | jq -r '.[0]')
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "cat kubespray/inventory/mycluster/hosts.yaml"
 
-      - name: Run Ansible Playbook on the first master host
-        run: |
-          MASTER_IP=$(terraform output -json master_external_ips | jq -r '.[0]')
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "source ~/kubespray-env/bin/activate && cd kubespray && ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -vvv"
-
       - name: Pause for 1 minute
         run: sleep 60
 
@@ -194,7 +189,7 @@ jobs:
           TF_VAR_yc_secret_key: ${{ secrets.YC_SECRET_KEY }}
           TF_VAR_tfstate_key: ${{ env.TFSTATE_KEY }}
         run: terraform destroy -auto-approve
-  
+
       - name: Clean up SSH keys
         if: always()
         run: |
