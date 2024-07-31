@@ -19,11 +19,3 @@ variable "ssh_public_key" {
   description = "SSH public key for accessing the instances"
   type        = string
 }
-
-variable "yc_access_key" {
-  type = string
-}
-
-variable "yc_secret_key" {
-  type = string
-}
