@@ -58,7 +58,7 @@ resource "yandex_compute_instance" "k8s-worker" {
   service_account_id = var.yc_service_account_id
 }
 
-resource "null_resource" "check_ping_connection" {
+resource "null_resource" "check_ssh_connection" {
   provisioner "local-exec" {
     command = <<EOT
       #!/bin/sh
@@ -68,11 +68,11 @@ resource "null_resource" "check_ping_connection" {
         exit 1
       fi
       for host in $MASTER_IPS; do
-        while ! ping -c 1 -W 1 $host &> /dev/null; do
-          echo "Ожидание доступности $host..."
+        while ! nc -zv $host 22; do
+          echo "Ожидание SSH-соединения с $host..."
           sleep 10
         done
-        echo "$host доступен"
+        echo "SSH-соединение с $host установлено"
       done
     EOT
   }
