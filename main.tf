@@ -59,25 +59,25 @@ resource "yandex_compute_instance" "k8s-worker" {
 }
 
 
-resource "null_resource" "check_ssh_connection" {
-  depends_on = [yandex_compute_instance.k8s-master]
+#resource "null_resource" "check_ssh_connection" {
+#  depends_on = [yandex_compute_instance.k8s-master]
 
-  provisioner "local-exec" {
-    command = <<EOT
-      MASTER_IPS=$(terraform output -json master_external_ips | jq -r '.[]')
-      for host in $MASTER_IPS; do
-        while ! nc -zv $host 22; do
-          echo "Waiting for SSH connection to $host..."
-          sleep 10
-        done
-        echo "SSH connection to $host established"
-      done
-    EOT
-    environment = {
-      SSH_PRIVATE_KEY_PATH = var.ssh_private_key_path
-    }
-  }
-}
+#  provisioner "local-exec" {
+#    command = <<EOT
+#      MASTER_IPS=$(terraform output -json master_external_ips | jq -r '.[]')
+#      for host in $MASTER_IPS; do
+#        while ! nc -zv $host 22; do
+#          echo "Waiting for SSH connection to $host..."
+#          sleep 10
+#        done
+#        echo "SSH connection to $host established"
+#      done
+#    EOT
+#    environment = {
+#      SSH_PRIVATE_KEY_PATH = var.ssh_private_key_path
+#    }
+#  }
+#}
 
 # resource "null_resource" "run_additional_commands" {
 #   depends_on = [null_resource.check_ssh_connection]
