@@ -58,7 +58,6 @@ resource "yandex_compute_instance" "k8s-worker" {
   service_account_id = var.yc_service_account_id
 }
 
-
 resource "null_resource" "check_ssh_connection" {
   provisioner "local-exec" {
     command = <<EOT
@@ -78,6 +77,7 @@ resource "null_resource" "check_ssh_connection" {
     EOT
   }
 }
+
 
 # resource "null_resource" "run_additional_commands" {
 #   depends_on = [null_resource.check_ssh_connection]
