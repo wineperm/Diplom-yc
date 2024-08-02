@@ -91,12 +91,13 @@ resource "null_resource" "check_ssh_connection" {
       "sudo apt update -y",
       "sudo apt install python3.12-venv -y",
       "python3 -m venv venv",
-      "source venv/bin/activate",
+      "venv/bin/pip install --upgrade pip",
       "git clone https://github.com/kubernetes-sigs/kubespray",
       "cd kubespray/",
-      "pip3 install -r requirements.txt",
-      "pip3 install ruamel.yaml"
+      "venv/bin/pip install -r requirements.txt",
+      "venv/bin/pip install ruamel.yaml"
     ]
+  
     connection {
       type        = "ssh"
       user        = "ubuntu"
