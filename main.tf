@@ -142,30 +142,3 @@ resource "null_resource" "copy_inventory" {
   }
 }
 
-resource "local_file" "hosts_yaml" {
-  content = templatefile("${path.module}/hosts.yaml.tpl", {
-    master_hosts = [
-      for master in yandex_compute_instance.k8s-master : {
-        name = master.name
-        ip   = master.network_interface.0.nat_ip_address
-      }
-    ]
-    worker_hosts = [
-      for worker in yandex_compute_instance.k8s-worker : {
-        name = worker.name
-        ip   = worker.network_interface.0.nat_ip_address
-      }
-    ]
-  })
-  filename = "${path.module}/hosts.yaml"
-}
-
-resource "null_resource" "copy_hosts_yaml" {
-  depends_on = [local_file.hosts_yaml]
-
-  provisioner "local-exec" {
-    command = <<EOT
-      scp -i ${var.ssh_private_key_path} -o StrictHostKeyChecking=no ${path.module}/hosts.yaml ubuntu@${yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address}:~/kubespray/inventory/mycluster/hosts.yaml
-    EOT
-  }
-}
