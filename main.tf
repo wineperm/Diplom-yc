@@ -125,7 +125,7 @@ resource "null_resource" "run_additional_commands" {
   }
 }
 
-resource "null_resource" "copy_files_to_master" {
+resource "null_resource" "copy_inventory" {
   depends_on = [null_resource.run_additional_commands]
 
   provisioner "remote-exec" {
