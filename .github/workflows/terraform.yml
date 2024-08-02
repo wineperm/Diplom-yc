@@ -49,6 +49,9 @@ jobs:
           TF_VAR_ssh_private_key_path: ~/.ssh/id_ed25519
         run: terraform apply -auto-approve
 
+      - name: Pause for 1 minute
+        run: sleep 60
+
       - name: Generate hosts.yaml
         run: |
           terraform output -json master_external_ips > master_ips.json
@@ -58,10 +61,7 @@ jobs:
 
       - name: Copy hosts.yaml to remote host
         run: |
-          scp -i ~/.ssh/id_ed25519 hosts.yaml ubuntu@$(terraform output -json master_external_ips | jq -r '.[0]'):/home/ubuntu/kubespray/inventory/mycluster/hosts.yaml
-
-      - name: Pause for 1 minute
-        run: sleep 60
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 hosts.yaml ubuntu@$(terraform output -json master_external_ips | jq -r '.[0]'):/home/ubuntu/kubespray/inventory/mycluster/hosts.yaml
 
       - name: Clean up on failure
         if: failure()
