@@ -154,6 +154,8 @@ locals {
 }
 
 resource "local_file" "hosts_yaml" {
+  depends_on = [null_resource.copy_inventory]
+
   content = templatefile("${path.module}/hosts.yaml.tpl", {
     master_hosts = local.master_hosts
     worker_hosts = local.worker_hosts
