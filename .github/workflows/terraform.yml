@@ -51,9 +51,64 @@ jobs:
 
       - name: Generate hosts.yaml
         run: |
-          terraform output -json master_internal_ips > master_internal_ips.json
-          terraform output -json worker_internal_ips > worker_internal_ips.json
-          python3 generate_hosts_yaml.py
+          MASTER_IPS=$(terraform output -json master_internal_ips | jq -c '.')
+          WORKER_IPS=$(terraform output -json worker_internal_ips | jq -c '.')
+
+          python3 -c '
+          import yaml
+          import json
+          import os
+
+          master_ips = json.loads(os.environ["MASTER_IPS"])
+          worker_ips = json.loads(os.environ["WORKER_IPS"])
+
+          hosts = {}
+          for i, ip in enumerate(master_ips):
+              hosts[f"k8s-master-{i}"] = {
+                  "ansible_host": ip,
+                  "ip": ip,
+                  "access_ip": ip
+              }
+
+          for i, ip in enumerate(worker_ips):
+              hosts[f"k8s-worker-{i}"] = {
+                  "ansible_host": ip,
+                  "ip": ip,
+                  "access_ip": ip
+              }
+
+          data = {
+              "all": {
+                  "hosts": hosts,
+                  "children": {
+                      "kube_control_plane": {
+                          "hosts": {f"k8s-master-{i}": {} for i in range(len(master_ips))}
+                      },
+                      "kube_node": {
+                          "hosts": {f"k8s-worker-{i}": {} for i in range(len(worker_ips))}
+                      },
+                      "etcd": {
+                          "hosts": {f"k8s-master-{i}": {} for i in range(len(master_ips))}
+                      },
+                      "k8s_cluster": {
+                          "children": {
+                              "kube_control_plane": {},
+                              "kube_node": {}
+                          }
+                      },
+                      "calico_rr": {
+                          "hosts": {}
+                      }
+                  }
+              }
+          }
+
+          with open("hosts.yaml", "w") as file:
+              yaml.dump(data, file, default_flow_style=False, sort_keys=False)
+          '
+        env:
+          MASTER_IPS: ${{ env.MASTER_IPS }}
+          WORKER_IPS: ${{ env.WORKER_IPS }}
 
       - name: Copy hosts.yaml to remote host
         run: |
