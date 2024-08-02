@@ -158,6 +158,24 @@ resource "null_resource" "check_jinja2_installation" {
   }
 }
 
+output "master_hosts" {
+  value = [
+    for master in yandex_compute_instance.k8s-master : {
+      name = master.name
+      ip   = master.network_interface.0.nat_ip_address
+    }
+  ]
+}
+
+output "worker_hosts" {
+  value = [
+    for worker in yandex_compute_instance.k8s-worker : {
+      name = worker.name
+      ip   = worker.network_interface.0.nat_ip_address
+    }
+  ]
+}
+
 resource "local_file" "hosts_yaml" {
   depends_on = [null_resource.check_jinja2_installation]
 
