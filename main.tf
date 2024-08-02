@@ -225,3 +225,65 @@ resource "null_resource" "copy_inventory" {
     }
   }
 }
+
+resource "null_resource" "generate_hosts_yaml" {
+  depends_on = [null_resource.copy_inventory]
+
+  provisioner "local-exec" {
+    command = <<EOT
+      cat <<EOF > hosts.yaml
+all:
+  hosts:
+    %{ for host in yandex_compute_instance.k8s-master ~}
+    ${host.name}:
+      ansible_host: ${host.network_interface.0.ip_address}
+      ip: ${host.network_interface.0.ip_address}
+      access_ip: ${host.network_interface.0.ip_address}
+    %{ endfor ~}
+    %{ for host in yandex_compute_instance.k8s-worker ~}
+    ${host.name}:
+      ansible_host: ${host.network_interface.0.ip_address}
+      ip: ${host.network_interface.0.ip_address}
+      access_ip: ${host.network_interface.0.ip_address}
+    %{ endfor ~}
+  children:
+    kube_control_plane:
+      hosts:
+        %{ for host in yandex_compute_instance.k8s-master ~}
+        ${host.name}:
+        %{ endfor ~}
+    kube_node:
+      hosts:
+        %{ for host in yandex_compute_instance.k8s-worker ~}
+        ${host.name}:
+        %{ endfor ~}
+    etcd:
+      hosts:
+        %{ for host in yandex_compute_instance.k8s-master ~}
+        ${host.name}:
+        %{ endfor ~}
+    k8s_cluster:
+      children:
+        kube_control_plane:
+        kube_node:
+    calico_rr:
+      hosts: {}
+EOF
+    EOT
+  }
+}
+
+resource "null_resource" "copy_hosts_yaml" {
+  depends_on = [null_resource.generate_hosts_yaml]
+
+  provisioner "file" {
+    source      = "hosts.yaml"
+    destination = "/home/ubuntu/kubespray/inventory/mycluster/hosts.yaml"
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.ssh_private_key_path)
+      host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
+    }
+  }
+}
