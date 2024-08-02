@@ -225,30 +225,3 @@ resource "null_resource" "copy_inventory" {
     }
   }
 }
-
-resource "null_resource" "generate_hosts_yaml" {
-  depends_on = [null_resource.copy_inventory]
-
-  provisioner "local-exec" {
-    command = <<EOT
-      terraform output -json master_internal_ips > master_internal_ips.json
-      terraform output -json worker_internal_ips > worker_internal_ips.json
-      python3 generate_hosts_yaml.py
-    EOT
-  }
-}
-
-resource "null_resource" "copy_hosts_yaml" {
-  depends_on = [null_resource.generate_hosts_yaml]
-
-  provisioner "file" {
-    source      = "hosts.yaml"
-    destination = "/home/ubuntu/kubespray/inventory/mycluster/hosts.yaml"
-    connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
-      host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
-    }
-  }
-}
