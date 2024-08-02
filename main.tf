@@ -164,14 +164,9 @@ resource "local_file" "hosts_yaml" {
 resource "null_resource" "copy_hosts_yaml" {
   depends_on = [local_file.hosts_yaml]
 
-  provisioner "file" {
-    source      = "${path.module}/hosts.yaml"
-    destination = "~/kubespray/inventory/mycluster/hosts.yaml"
-    connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
-      host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
-    }
+  provisioner "local-exec" {
+    command = <<EOT
+      scp -i ${var.ssh_private_key_path} ${path.module}/hosts.yaml ubuntu@${yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address}:~/kubespray/inventory/mycluster/hosts.yaml
+    EOT
   }
 }
