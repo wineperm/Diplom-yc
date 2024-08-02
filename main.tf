@@ -93,19 +93,21 @@ resource "null_resource" "check_ssh_connection" {
   }
 }
 
- resource "null_resource" "run_additional_commands" {
+resource "null_resource" "run_additional_commands" {
   depends_on = [null_resource.check_ssh_connection]
 
   provisioner "remote-exec" {
     inline = [
-      "sudo apt update -y",
-      "sudo apt install -y python3 python3-pip python3.12-venv",
-      "python3 -m venv venv",
-      "source venv/bin/activate",
-      "git clone https://github.com/kubernetes-sigs/kubespray",
-      "cd kubespray/",
-      "venv/bin/pip install -r requirements.txt",
-      "venv/bin/pip install ruamel.yaml"
+      <<-EOT
+      sudo apt update -y
+      sudo apt install -y python3 python3-pip python3.12-venv
+      python3 -m venv venv
+      source venv/bin/activate
+      git clone https://github.com/kubernetes-sigs/kubespray
+      cd kubespray/
+      venv/bin/pip install -r requirements.txt
+      venv/bin/pip install ruamel.yaml
+      EOT
     ]
     connection {
       type        = "ssh"
@@ -114,7 +116,7 @@ resource "null_resource" "check_ssh_connection" {
       host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
     }
   }
- }
+}
 
 # locals {
 #   master_hosts = [for master in yandex_compute_instance.k8s-master : {
