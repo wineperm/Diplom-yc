@@ -162,38 +162,12 @@ resource "local_file" "hosts_yaml" {
   depends_on = [null_resource.copy_inventory]
 }
 
-resource "null_resource" "copy_files_to_master" {
+resource "null_resource" "copy_hosts_yaml" {
   depends_on = [local_file.hosts_yaml]
 
   provisioner "file" {
-    source      = "hosts.yaml"
+    source      = local_file.hosts_yaml.filename
     destination = "~/kubespray/inventory/mycluster/hosts.yaml"
-
-    connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
-      host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
-    }
-  }
-
-  provisioner "file" {
-    source      = var.ssh_private_key_path
-    destination = "~/.ssh/id_ed25519"
-
-    connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
-      host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
-    }
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "chmod 600 ~/.ssh/id_ed25519"
-    ]
-
     connection {
       type        = "ssh"
       user        = "ubuntu"
