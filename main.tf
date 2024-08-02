@@ -1,5 +1,5 @@
 resource "yandex_compute_instance" "k8s-master" {
-  count       = 2
+  count       = 1
   name        = "k8s-master-${count.index}"
   platform_id = "standard-v2"
   zone        = element(["ru-central1-a", "ru-central1-b", "ru-central1-d"], count.index)
@@ -29,7 +29,7 @@ resource "yandex_compute_instance" "k8s-master" {
 }
 
 resource "yandex_compute_instance" "k8s-worker" {
-  count       = 2
+  count       = 1
   name        = "k8s-worker-${count.index}"
   platform_id = "standard-v2"
   zone        = element(["ru-central1-a", "ru-central1-b", "ru-central1-d"], count.index % 3)
@@ -91,13 +91,12 @@ resource "null_resource" "check_ssh_connection" {
       "sudo apt update -y",
       "sudo apt install python3.12-venv -y",
       "python3 -m venv venv",
-      "venv/bin/pip install --upgrade pip",
+      "source venv/bin/activate",
       "git clone https://github.com/kubernetes-sigs/kubespray",
       "cd kubespray/",
-      "venv/bin/pip install -r requirements.txt",
-      "venv/bin/pip install ruamel.yaml"
+      "pip3 install -r requirements.txt",
+      "pip3 install ruamel.yaml"
     ]
-  
     connection {
       type        = "ssh"
       user        = "ubuntu"
