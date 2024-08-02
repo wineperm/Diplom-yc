@@ -147,7 +147,6 @@ resource "null_resource" "generate_hosts_yaml" {
 
   provisioner "local-exec" {
     command = <<EOT
-      terraform output -json master_external_ips > master_ips.json
       terraform output -json master_internal_ips > master_internal_ips.json
       terraform output -json worker_internal_ips > worker_internal_ips.json
       python3 generate_hosts_yaml.py
