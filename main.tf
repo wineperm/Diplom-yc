@@ -153,22 +153,20 @@ locals {
   }]
 }
 
-resource "null_resource" "generate_hosts_yaml" {
-  depends_on = [null_resource.run_additional_commands]
+resource "local_file" "hosts_yaml" {
+  content = templatefile("${path.module}/hosts.yaml.tpl", {
+    master_hosts = local.master_hosts
+    worker_hosts = local.worker_hosts
+  })
+  filename = "${path.module}/hosts.yaml"
+}
 
-  provisioner "remote-exec" {
-    inline = [
-      <<-EOT
-      #!/bin/bash
+resource "null_resource" "copy_hosts_yaml" {
+  depends_on = [local_file.hosts_yaml]
 
-      cat <<EOF > ~/kubespray/inventory/mycluster/hosts.yaml
-      ${templatefile("${path.module}/hosts.yaml.tpl", {
-        master_hosts = local.master_hosts
-        worker_hosts = local.worker_hosts
-      })}
-      EOF
-      EOT
-    ]
+  provisioner "file" {
+    source      = "${path.module}/hosts.yaml"
+    destination = "~/kubespray/inventory/mycluster/hosts.yaml"
     connection {
       type        = "ssh"
       user        = "ubuntu"
