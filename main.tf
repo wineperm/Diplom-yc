@@ -114,12 +114,6 @@ resource "null_resource" "run_additional_commands" {
       cd kubespray
       python3.11 -m pip install -r requirements.txt
       python3.11 -m pip install ruamel.yaml
-
-      # Ensure the target directory exists
-      mkdir -p ~/kubespray/inventory/mycluster
-
-      # Copy the sample inventory to mycluster
-      cp -rfp ~/kubespray/inventory/sample ~/kubespray/inventory/mycluster
       EOT
     ]
     connection {
@@ -150,28 +144,28 @@ resource "local_file" "hosts_yaml" {
   filename = "hosts.yaml"
 }
 
-# resource "null_resource" "create_directory_on_master" {
-#   depends_on = [null_resource.run_additional_commands]
+resource "null_resource" "create_directory_on_master" {
+  depends_on = [null_resource.run_additional_commands]
 
-#   provisioner "remote-exec" {
-#     inline = [
-#       "mkdir -p /home/ubuntu/inventory/mycluster"
-#     ]
-#     connection {
-#       type        = "ssh"
-#       user        = "ubuntu"
-#       private_key = file(var.ssh_private_key_path)
-#       host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
-#     }
-#   }
-# }
+  provisioner "remote-exec" {
+    inline = [
+      "mkdir -p ~/kubespray/inventory/mycluster"
+    ]
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.ssh_private_key_path)
+      host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
+    }
+  }
+}
 
 resource "null_resource" "copy_files_to_master" {
-  depends_on = [local_file.hosts_yaml]
+  depends_on = [null_resource.create_directory_on_master, local_file.hosts_yaml]
 
   provisioner "file" {
     source      = "hosts.yaml"
-    destination = "/home/ubuntu/inventory/mycluster/hosts.yaml"
+    destination = "~/inventory/mycluster/hosts.yaml"
     connection {
       type        = "ssh"
       user        = "ubuntu"
@@ -182,7 +176,7 @@ resource "null_resource" "copy_files_to_master" {
 
   provisioner "file" {
     source      = var.ssh_private_key_path
-    destination = "/home/ubuntu/.ssh/id_ed25519"
+    destination = "~/.ssh/id_ed25519"
     connection {
       type        = "ssh"
       user        = "ubuntu"
