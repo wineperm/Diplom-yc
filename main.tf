@@ -158,7 +158,7 @@ resource "local_file" "hosts_yaml" {
     master_hosts = local.master_hosts
     worker_hosts = local.worker_hosts
   })
-  filename = "hosts.yaml"
+  filename = "${path.module}/hosts.yaml"
   depends_on = [null_resource.copy_inventory]
 }
 
@@ -166,7 +166,7 @@ resource "null_resource" "copy_hosts_yaml" {
   depends_on = [local_file.hosts_yaml]
 
   provisioner "file" {
-    source      = local_file.hosts_yaml.filename
+    source      = "${path.module}/hosts.yaml"
     destination = "~/kubespray/inventory/mycluster/hosts.yaml"
     connection {
       type        = "ssh"
