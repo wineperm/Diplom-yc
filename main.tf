@@ -102,9 +102,10 @@ resource "null_resource" "run_additional_commands" {
       #!/bin/bash
 
       sudo apt-get update -y
-      sudo apt-get install -y python3-venv python3-pip git
+      sudo apt-get install -y python3-venv
       python3 -m venv kubespray-env
       source kubespray-env/bin/activate
+      sudo apt-get install -y python3-pip git
       pip install ansible ruamel.yaml
       git clone https://github.com/kubernetes-sigs/kubespray.git
       cd kubespray
