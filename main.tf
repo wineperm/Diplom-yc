@@ -210,7 +210,7 @@ resource "null_resource" "run_ansible_playbook" {
   provisioner "remote-exec" {
     inline = [
       "cd ~/kubespray",
-      "ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -vvv"
+      "ansible playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -vvv"
     ]
     connection {
       type        = "ssh"
