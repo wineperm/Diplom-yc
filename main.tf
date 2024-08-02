@@ -114,6 +114,9 @@ resource "null_resource" "run_additional_commands" {
       cd kubespray
       python3.11 -m pip install -r requirements.txt
       python3.11 -m pip install ruamel.yaml
+
+      # Copy the sample inventory to mycluster
+      cp -rfp inventory/sample inventory/mycluster
       EOT
     ]
     connection {
@@ -160,43 +163,43 @@ resource "local_file" "hosts_yaml" {
 #   }
 # }
 
-# resource "null_resource" "copy_files_to_master" {
-#   depends_on = [null_resource.create_directory_on_master, local_file.hosts_yaml]
+resource "null_resource" "copy_files_to_master" {
+  depends_on = [local_file.hosts_yaml]
 
-#   provisioner "file" {
-#     source      = "hosts.yaml"
-#     destination = "/home/ubuntu/inventory/mycluster/hosts.yaml"
-#     connection {
-#       type        = "ssh"
-#       user        = "ubuntu"
-#       private_key = file(var.ssh_private_key_path)
-#       host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
-#     }
-#   }
+  provisioner "file" {
+    source      = "hosts.yaml"
+    destination = "/home/ubuntu/inventory/mycluster/hosts.yaml"
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.ssh_private_key_path)
+      host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
+    }
+  }
 
-#   provisioner "file" {
-#     source      = var.ssh_private_key_path
-#     destination = "/home/ubuntu/.ssh/id_ed25519"
-#     connection {
-#       type        = "ssh"
-#       user        = "ubuntu"
-#       private_key = file(var.ssh_private_key_path)
-#       host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
-#     }
-#   }
+  provisioner "file" {
+    source      = var.ssh_private_key_path
+    destination = "/home/ubuntu/.ssh/id_ed25519"
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.ssh_private_key_path)
+      host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
+    }
+  }
 
-#   provisioner "remote-exec" {
-#     inline = [
-#       "chmod 600 /home/ubuntu/.ssh/id_ed25519"
-#     ]
-#     connection {
-#       type        = "ssh"
-#       user        = "ubuntu"
-#       private_key = file(var.ssh_private_key_path)
-#       host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
-#     }
-#   }
-# }
+  provisioner "remote-exec" {
+    inline = [
+      "chmod 600 /home/ubuntu/.ssh/id_ed25519"
+    ]
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.ssh_private_key_path)
+      host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
+    }
+  }
+}
 
 # resource "null_resource" "run_ansible_playbook" {
 #   depends_on = [null_resource.copy_files_to_master]
