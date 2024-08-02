@@ -204,3 +204,21 @@ resource "null_resource" "copy_hosts_yaml" {
   }
 }
 
+resource "null_resource" "run_ansible_playbook" {
+  depends_on = [null_resource.copy_hosts_yaml]
+
+  provisioner "remote-exec" {
+    inline = [
+      "cd ~/kubespray",
+      "ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -vvv"
+    ]
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.ssh_private_key_path)
+      host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
+    }
+  }
+}
+
+
