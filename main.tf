@@ -125,24 +125,24 @@ resource "null_resource" "run_additional_commands" {
   }
 }
 
-# locals {
-#   master_hosts = [for master in yandex_compute_instance.k8s-master : {
-#     name = master.name
-#     ip   = master.network_interface.0.ip_address
-#   }]
-#   worker_hosts = [for worker in yandex_compute_instance.k8s-worker : {
-#     name = worker.name
-#     ip   = worker.network_interface.0.ip_address
-#   }]
-# }
+locals {
+  master_hosts = [for master in yandex_compute_instance.k8s-master : {
+    name = master.name
+    ip   = master.network_interface.0.ip_address
+  }]
+  worker_hosts = [for worker in yandex_compute_instance.k8s-worker : {
+    name = worker.name
+    ip   = worker.network_interface.0.ip_address
+  }]
+}
 
-# resource "local_file" "hosts_yaml" {
-#   content = templatefile("${path.module}/hosts.yaml.tpl", {
-#     master_hosts = local.master_hosts
-#     worker_hosts = local.worker_hosts
-#   })
-#   filename = "hosts.yaml"
-# }
+resource "local_file" "hosts_yaml" {
+  content = templatefile("${path.module}/hosts.yaml.tpl", {
+    master_hosts = local.master_hosts
+    worker_hosts = local.worker_hosts
+  })
+  filename = "hosts.yaml"
+}
 
 # resource "null_resource" "create_directory_on_master" {
 #   depends_on = [null_resource.run_additional_commands]
