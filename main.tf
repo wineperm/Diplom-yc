@@ -142,6 +142,17 @@ resource "null_resource" "copy_inventory" {
   }
 }
 
+resource "null_resource" "install_local_dependencies" {
+  provisioner "local-exec" {
+    command = <<EOT
+      #!/bin/bash
+      sudo apt-get update -y
+      sudo apt-get install -y jq python3 python3-pip
+      pip3 install ruamel.yaml
+    EOT
+  }
+}
+
 resource "null_resource" "generate_and_copy_hosts_yaml" {
   depends_on = [null_resource.copy_inventory, null_resource.install_local_dependencies]
 
