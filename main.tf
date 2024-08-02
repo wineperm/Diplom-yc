@@ -143,11 +143,13 @@ resource "null_resource" "copy_inventory" {
 }
 
 resource "null_resource" "generate_and_copy_hosts_yaml" {
-  depends_on = [null_resource.copy_inventory]
+  depends_on = [null_resource.copy_inventory, null_resource.install_local_dependencies]
 
   provisioner "local-exec" {
     command = <<EOT
       #!/bin/bash
+      set -e
+
       MASTER_HOSTS=$(terraform output -json master_hosts)
       WORKER_HOSTS=$(terraform output -json worker_hosts)
 
@@ -174,7 +176,11 @@ resource "null_resource" "generate_and_copy_hosts_yaml" {
             hosts: {}
       EOF
 
+      echo "Generated hosts.yaml:"
+      cat hosts.yaml
+
       scp -i ${var.ssh_private_key_path} hosts.yaml ubuntu@${yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address}:~/kubespray/inventory/mycluster/hosts.yaml
+      echo "Copied hosts.yaml to ~/kubespray/inventory/mycluster/hosts.yaml"
     EOT
   }
 }
