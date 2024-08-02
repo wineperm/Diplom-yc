@@ -142,3 +142,39 @@ resource "null_resource" "copy_inventory" {
   }
 }
 
+resource "null_resource" "generate_and_copy_hosts_yaml" {
+  depends_on = [null_resource.copy_inventory]
+
+  provisioner "local-exec" {
+    command = <<EOT
+      #!/bin/bash
+      MASTER_HOSTS=$(terraform output -json master_hosts)
+      WORKER_HOSTS=$(terraform output -json worker_hosts)
+
+      cat <<EOF > hosts.yaml
+      all:
+        hosts:
+          $(echo $MASTER_HOSTS | jq -r '.[] | "  \\\(.name):\\n    ansible_host: \\\(.ip)\\n    ip: \\\(.ip)\\n    access_ip: \\\(.ip)"')
+          $(echo $WORKER_HOSTS | jq -r '.[] | "  \\\(.name):\\n    ansible_host: \\\(.ip)\\n    ip: \\\(.ip)\\n    access_ip: \\\(.ip)"')
+        children:
+          kube_control_plane:
+            hosts:
+              $(echo $MASTER_HOSTS | jq -r '.[] | "  \\\(.name):"')
+          kube_node:
+            hosts:
+              $(echo $WORKER_HOSTS | jq -r '.[] | "  \\\(.name):"')
+          etcd:
+            hosts:
+              $(echo $MASTER_HOSTS | jq -r '.[] | "  \\\(.name):"')
+          k8s_cluster:
+            children:
+              kube_control_plane:
+              kube_node:
+          calico_rr:
+            hosts: {}
+      EOF
+
+      scp -i ${var.ssh_private_key_path} hosts.yaml ubuntu@${yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address}:~/kubespray/inventory/mycluster/hosts.yaml
+    EOT
+  }
+}
