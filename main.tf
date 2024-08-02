@@ -142,56 +142,69 @@ resource "null_resource" "copy_inventory" {
   }
 }
 
-resource "null_resource" "install_local_dependencies" {
+resource "null_resource" "check_jinja2_installation" {
+  depends_on = [null_resource.copy_inventory]
+
   provisioner "local-exec" {
     command = <<EOT
-      #!/bin/bash
-      sudo apt-get update -y
-      sudo apt-get install -y jq python3 python3-pip
-      pip3 install ruamel.yaml
+      #!/bin/sh
+      if ! command -v jinja2 &> /dev/null; then
+        echo "Jinja2 is not installed. Installing Jinja2..."
+        pip install jinja2
+      else
+        echo "Jinja2 is already installed."
+      fi
     EOT
   }
 }
 
-resource "null_resource" "generate_and_copy_hosts_yaml" {
-  depends_on = [null_resource.copy_inventory, null_resource.install_local_dependencies]
+resource "local_file" "hosts_yaml" {
+  depends_on = [null_resource.check_jinja2_installation]
 
-  provisioner "local-exec" {
-    command = <<EOT
-      #!/bin/bash
-      set -e
+  content = templatefile("${path.module}/hosts.yaml.tpl", {
+    master_hosts = [
+      for master in yandex_compute_instance.k8s-master : {
+        name = master.name
+        ip   = master.network_interface.0.nat_ip_address
+      }
+    ]
+    worker_hosts = [
+      for worker in yandex_compute_instance.k8s-worker : {
+        name = worker.name
+        ip   = worker.network_interface.0.nat_ip_address
+      }
+    ]
+  })
+  filename = "${path.module}/hosts.yaml"
+}
 
-      MASTER_HOSTS=$(terraform output -json master_hosts)
-      WORKER_HOSTS=$(terraform output -json worker_hosts)
+resource "null_resource" "create_directory" {
+  depends_on = [null_resource.copy_inventory]
 
-      cat <<EOF > hosts.yaml
-      all:
-        hosts:
-          $(echo $MASTER_HOSTS | jq -r '.[] | "  \\\(.name):\\n    ansible_host: \\\(.ip)\\n    ip: \\\(.ip)\\n    access_ip: \\\(.ip)"')
-          $(echo $WORKER_HOSTS | jq -r '.[] | "  \\\(.name):\\n    ansible_host: \\\(.ip)\\n    ip: \\\(.ip)\\n    access_ip: \\\(.ip)"')
-        children:
-          kube_control_plane:
-            hosts:
-              $(echo $MASTER_HOSTS | jq -r '.[] | "  \\\(.name):"')
-          kube_node:
-            hosts:
-              $(echo $WORKER_HOSTS | jq -r '.[] | "  \\\(.name):"')
-          etcd:
-            hosts:
-              $(echo $MASTER_HOSTS | jq -r '.[] | "  \\\(.name):"')
-          k8s_cluster:
-            children:
-              kube_control_plane:
-              kube_node:
-          calico_rr:
-            hosts: {}
-      EOF
+  provisioner "remote-exec" {
+    inline = [
+      "mkdir -p ~/kubespray/inventory/mycluster"
+    ]
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.ssh_private_key_path)
+      host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
+    }
+  }
+}
 
-      echo "Generated hosts.yaml:"
-      cat hosts.yaml
+resource "null_resource" "copy_hosts_yaml" {
+  depends_on = [local_file.hosts_yaml, null_resource.create_directory]
 
-      scp -i ${var.ssh_private_key_path} hosts.yaml ubuntu@${yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address}:~/kubespray/inventory/mycluster/hosts.yaml
-      echo "Copied hosts.yaml to ~/kubespray/inventory/mycluster/hosts.yaml"
-    EOT
+  provisioner "file" {
+    source      = "${path.module}/hosts.yaml"
+    destination = "/home/ubuntu/kubespray/inventory/mycluster/hosts.yaml"
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.ssh_private_key_path)
+      host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
+    }
   }
 }
