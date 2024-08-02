@@ -125,13 +125,13 @@ resource "null_resource" "run_additional_commands" {
   }
 }
 
-resource "null_resource" "copy_inventory" {
+resource "null_resource" "copy_files_to_master" {
   depends_on = [null_resource.run_additional_commands]
 
   provisioner "remote-exec" {
     inline = [
-      "cp -rfp ~/kubespray/inventory/sample ~/kubespray/inventory/mycluster",
-      "mkdir -p ~/kubespray/inventory/mycluster"  # Убедитесь, что директория существует
+      "mkdir -p ~/kubespray/inventory/mycluster",
+      "cp -rfp ~/kubespray/inventory/sample ~/kubespray/inventory/mycluster"
     ]
     connection {
       type        = "ssh"
