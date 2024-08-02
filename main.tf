@@ -125,6 +125,22 @@ resource "null_resource" "run_additional_commands" {
   }
 }
 
+resource "null_resource" "copy_inventory" {
+  depends_on = [null_resource.run_additional_commands]
+
+  provisioner "remote-exec" {
+    inline = [
+      "cp -rfp inventory/sample inventory/mycluster"
+    ]
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.ssh_private_key_path)
+      host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
+    }
+  }
+}
+
 locals {
   master_hosts = [for master in yandex_compute_instance.k8s-master : {
     name = master.name
@@ -142,30 +158,16 @@ resource "local_file" "hosts_yaml" {
     worker_hosts = local.worker_hosts
   })
   filename = "hosts.yaml"
-}
-
-resource "null_resource" "create_directory_on_master" {
-  depends_on = [null_resource.run_additional_commands]
-
-  provisioner "remote-exec" {
-    inline = [
-      "mkdir -p ~/kubespray/inventory/mycluster"
-    ]
-    connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
-      host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
-    }
-  }
+  depends_on = [null_resource.copy_inventory]
 }
 
 resource "null_resource" "copy_files_to_master" {
-  depends_on = [null_resource.create_directory_on_master, local_file.hosts_yaml]
+  depends_on = [local_file.hosts_yaml]
 
   provisioner "file" {
     source      = "hosts.yaml"
-    destination = "~/inventory/mycluster/hosts.yaml"
+    destination = "~/kubespray/inventory/mycluster/hosts.yaml"
+
     connection {
       type        = "ssh"
       user        = "ubuntu"
@@ -177,6 +179,7 @@ resource "null_resource" "copy_files_to_master" {
   provisioner "file" {
     source      = var.ssh_private_key_path
     destination = "~/.ssh/id_ed25519"
+
     connection {
       type        = "ssh"
       user        = "ubuntu"
@@ -187,8 +190,9 @@ resource "null_resource" "copy_files_to_master" {
 
   provisioner "remote-exec" {
     inline = [
-      "chmod 600 /home/ubuntu/.ssh/id_ed25519"
+      "chmod 600 ~/.ssh/id_ed25519"
     ]
+
     connection {
       type        = "ssh"
       user        = "ubuntu"
@@ -197,20 +201,3 @@ resource "null_resource" "copy_files_to_master" {
     }
   }
 }
-
-# resource "null_resource" "run_ansible_playbook" {
-#   depends_on = [null_resource.copy_files_to_master]
-
-#   provisioner "remote-exec" {
-#     inline = [
-#       "source venv/bin/activate",
-#       "ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml -b -vvv"
-#     ]
-#     connection {
-#       type        = "ssh"
-#       user        = "ubuntu"
-#       private_key = file(var.ssh_private_key_path)
-#       host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
-#     }
-#   }
-# }
