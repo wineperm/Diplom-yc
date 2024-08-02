@@ -67,6 +67,7 @@ resource "null_resource" "check_ssh_connection" {
   provisioner "local-exec" {
     command = <<EOT
       #!/bin/sh
+      sleep 60  # Пауза в 60 секунд
       MASTER_IPS=$(terraform output -json master_external_ips | jq -r '.[]')
       if [ -z "$MASTER_IPS" ]; then
         echo "Не найдено внешних IP-адресов мастеров."
