@@ -98,14 +98,23 @@ resource "null_resource" "run_additional_commands" {
 
   provisioner "remote-exec" {
     inline = [
-      "sudo apt update -y",
-      "sudo apt install -y python3 python3-pip python3.12-venv",
-      "python3 -m venv venv",
-      "venv/bin/python3 -m pip install --upgrade pip",
-      "git clone https://github.com/kubernetes-sigs/kubespray",
-      "cd kubespray/",
-      "venv/bin/python3 -m pip install -r requirements.txt",
-      "venv/bin/python3 -m pip install ruamel.yaml"
+      <<-EOT
+      #!/bin/bash
+
+      sudo apt-get update -y
+      sudo apt install software-properties-common -y
+      sudo add-apt-repository ppa:deadsnakes/ppa -y
+      sudo apt-get update -y
+      sudo apt-get install git pip python3.11 -y
+
+      curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+      python3.11 get-pip.py
+
+      git clone https://github.com/kubernetes-sigs/kubespray.git
+      cd kubespray
+      python3.11 -m pip install -r requirements.txt
+      python3.11 -m pip install ruamel.yaml
+      EOT
     ]
     connection {
       type        = "ssh"
