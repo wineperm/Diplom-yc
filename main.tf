@@ -67,6 +67,7 @@ resource "null_resource" "check_ssh_connection" {
   provisioner "local-exec" {
     command = <<EOT
       #!/bin/sh
+      terraform refresh
       sleep 60  # Пауза в 60 секунд
       MASTER_IPS=$(terraform output -json master_external_ips | jq -r '.[]')
       if [ -z "$MASTER_IPS" ]; then
@@ -84,28 +85,28 @@ resource "null_resource" "check_ssh_connection" {
   }
 }
 
- resource "null_resource" "run_additional_commands" {
-  depends_on = [null_resource.check_ssh_connection]
+#  resource "null_resource" "run_additional_commands" {
+#   depends_on = [null_resource.check_ssh_connection]
 
-  provisioner "remote-exec" {
-    inline = [
-      "sudo apt update -y",
-      "sudo apt install python3.12-venv -y",
-      "python3 -m venv venv",
-      "source venv/bin/activate",
-      "git clone https://github.com/kubernetes-sigs/kubespray",
-      "cd kubespray/",
-      "pip3 install -r requirements.txt",
-      "pip3 install ruamel.yaml"
-    ]
-    connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
-      host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
-    }
-  }
- }
+#   provisioner "remote-exec" {
+#     inline = [
+#       "sudo apt update -y",
+#       "sudo apt install python3.12-venv -y",
+#       "python3 -m venv venv",
+#       "source venv/bin/activate",
+#       "git clone https://github.com/kubernetes-sigs/kubespray",
+#       "cd kubespray/",
+#       "pip3 install -r requirements.txt",
+#       "pip3 install ruamel.yaml"
+#     ]
+#     connection {
+#       type        = "ssh"
+#       user        = "ubuntu"
+#       private_key = file(var.ssh_private_key_path)
+#       host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
+#     }
+#   }
+#  }
 
 # locals {
 #   master_hosts = [for master in yandex_compute_instance.k8s-master : {
