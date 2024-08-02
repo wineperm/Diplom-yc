@@ -102,18 +102,13 @@ resource "null_resource" "run_additional_commands" {
       #!/bin/bash
 
       sudo apt-get update -y
-      sudo apt install software-properties-common -y
-      sudo add-apt-repository ppa:deadsnakes/ppa -y
-      sudo apt-get update -y
-      sudo apt-get install git pip python3.11 -y
-
-      curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-      python3.11 get-pip.py
-
       git clone https://github.com/kubernetes-sigs/kubespray.git
-      cd kubespray
-      python3.11 -m pip install -r requirements.txt
-      python3.11 -m pip install ruamel.yaml
+      VENVDIR=kubespray-venv
+      KUBESPRAYDIR=kubespray
+      python3 -m venv $VENVDIR
+      source $VENVDIR/bin/activate
+      cd $KUBESPRAYDIR
+      pip install -U -r requirements.txt
       EOT
     ]
     connection {
