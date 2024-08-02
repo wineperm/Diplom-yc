@@ -115,8 +115,11 @@ resource "null_resource" "run_additional_commands" {
       python3.11 -m pip install -r requirements.txt
       python3.11 -m pip install ruamel.yaml
 
+      # Ensure the target directory exists
+      mkdir -p /home/ubuntu/inventory/mycluster
+
       # Copy the sample inventory to mycluster
-      cp -rfp inventory/sample inventory/mycluster
+      cp -rfp inventory/sample /home/ubuntu/inventory/mycluster
       EOT
     ]
     connection {
