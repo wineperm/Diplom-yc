@@ -142,23 +142,20 @@ resource "null_resource" "copy_inventory" {
   }
 }
 
-locals {
-  master_hosts = [for master in yandex_compute_instance.k8s-master : {
-    name = master.name
-    ip   = master.network_interface.0.ip_address
-  }]
-  worker_hosts = [for worker in yandex_compute_instance.k8s-worker : {
-    name = worker.name
-    ip   = worker.network_interface.0.ip_address
-  }]
-}
-
 resource "local_file" "hosts_yaml" {
-  depends_on = [null_resource.copy_inventory]
-
   content = templatefile("${path.module}/hosts.yaml.tpl", {
-    master_hosts = local.master_hosts
-    worker_hosts = local.worker_hosts
+    master_hosts = [
+      for master in yandex_compute_instance.k8s-master : {
+        name = master.name
+        ip   = master.network_interface.0.nat_ip_address
+      }
+    ]
+    worker_hosts = [
+      for worker in yandex_compute_instance.k8s-worker : {
+        name = worker.name
+        ip   = worker.network_interface.0.nat_ip_address
+      }
+    ]
   })
   filename = "${path.module}/hosts.yaml"
 }
