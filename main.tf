@@ -142,32 +142,41 @@ resource "null_resource" "copy_inventory" {
   }
 }
 
-locals {
-  master_hosts = [for master in yandex_compute_instance.k8s-master : {
-    name = master.name
-    ip   = master.network_interface.0.ip_address
-  }]
-  worker_hosts = [for worker in yandex_compute_instance.k8s-worker : {
-    name = worker.name
-    ip   = worker.network_interface.0.ip_address
-  }]
-}
+resource "null_resource" "generate_hosts_yaml" {
+  depends_on = [null_resource.run_additional_commands]
 
-resource "local_file" "hosts_yaml" {
-  content = templatefile("${path.module}/hosts.yaml.tpl", {
-    master_hosts = local.master_hosts
-    worker_hosts = local.worker_hosts
-  })
-  filename = "${path.module}/hosts.yaml"
-  depends_on = [null_resource.copy_inventory]
-}
+  provisioner "remote-exec" {
+    inline = [
+      <<-EOT
+      #!/bin/bash
 
-resource "null_resource" "copy_hosts_yaml" {
-  depends_on = [local_file.hosts_yaml]
+      MASTER_HOSTS='${jsonencode(local.master_hosts)}'
+      WORKER_HOSTS='${jsonencode(local.worker_hosts)}'
 
-  provisioner "file" {
-    source      = "${path.module}/hosts.yaml"
-    destination = "~/kubespray/inventory/mycluster/hosts.yaml"
+      cat <<EOF > ~/kubespray/inventory/mycluster/hosts.yaml
+      all:
+        hosts:
+          ${join("\n          ", [for master in local.master_hosts : "${master.name}:\n            ansible_host: ${master.ip}\n            ip: ${master.ip}\n            access_ip: ${master.ip}"])}
+          ${join("\n          ", [for worker in local.worker_hosts : "${worker.name}:\n            ansible_host: ${worker.ip}\n            ip: ${worker.ip}\n            access_ip: ${worker.ip}"])}
+        children:
+          kube_control_plane:
+            hosts:
+              ${join("\n              ", [for master in local.master_hosts : "${master.name}:"], "\n              ")}
+          kube_node:
+            hosts:
+              ${join("\n              ", [for worker in local.worker_hosts : "${worker.name}:"], "\n              ")}
+          etcd:
+            hosts:
+              ${join("\n              ", [for master in local.master_hosts : "${master.name}:"], "\n              ")}
+          k8s_cluster:
+            children:
+              kube_control_plane:
+              kube_node:
+          calico_rr:
+            hosts: {}
+      EOF
+      EOT
+    ]
     connection {
       type        = "ssh"
       user        = "ubuntu"
