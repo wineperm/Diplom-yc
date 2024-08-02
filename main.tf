@@ -101,11 +101,11 @@ resource "null_resource" "run_additional_commands" {
       "sudo apt update -y",
       "sudo apt install -y python3 python3-pip python3.12-venv",
       "python3 -m venv venv",
-      "venv/bin/pip install --upgrade pip",
+      "venv/bin/python3 -m pip install --upgrade pip",
       "git clone https://github.com/kubernetes-sigs/kubespray",
       "cd kubespray/",
-      "venv/bin/pip install -r requirements.txt",
-      "venv/bin/pip install ruamel.yaml"
+      "venv/bin/python3 -m pip install -r requirements.txt",
+      "venv/bin/python3 -m pip install ruamel.yaml"
     ]
     connection {
       type        = "ssh"
