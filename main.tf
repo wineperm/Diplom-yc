@@ -168,7 +168,7 @@ resource "null_resource" "copy_hosts_yaml" {
 
   provisioner "local-exec" {
     command = <<EOT
-      scp -i ${var.ssh_private_key_path} ${path.module}/hosts.yaml ubuntu@${yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address}:~/kubespray/inventory/mycluster/hosts.yaml
+      scp -i ${var.ssh_private_key_path} -o StrictHostKeyChecking=no ${path.module}/hosts.yaml ubuntu@${yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address}:~/kubespray/inventory/mycluster/hosts.yaml
     EOT
   }
 }
