@@ -58,17 +58,25 @@ resource "yandex_compute_instance" "k8s-worker" {
   service_account_id = var.yc_service_account_id
 }
 
-resource "null_resource" "check_ssh_connection" {
+resource "null_resource" "wait_for_outputs" {
   depends_on = [
     yandex_compute_instance.k8s-master,
     yandex_compute_instance.k8s-worker
   ]
 
   provisioner "local-exec" {
+    command = "echo 'Waiting for outputs to be ready...'"
+  }
+}
+
+resource "null_resource" "check_ssh_connection" {
+  depends_on = [
+    null_resource.wait_for_outputs
+  ]
+
+  provisioner "local-exec" {
     command = <<EOT
       #!/bin/sh
-      terraform refresh
-      sleep 60  # Пауза в 60 секунд
       MASTER_IPS=$(terraform output -json master_external_ips | jq -r '.[]')
       if [ -z "$MASTER_IPS" ]; then
         echo "Не найдено внешних IP-адресов мастеров."
