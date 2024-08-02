@@ -98,16 +98,14 @@ resource "null_resource" "run_additional_commands" {
 
   provisioner "remote-exec" {
     inline = [
-      <<-EOT
-      sudo apt update -y
-      sudo apt install -y python3 python3-pip python3.12-venv
-      python3 -m venv venv
-      source venv/bin/activate
-      git clone https://github.com/kubernetes-sigs/kubespray
-      cd kubespray/
-      venv/bin/pip install -r requirements.txt
-      venv/bin/pip install ruamel.yaml
-      EOT
+      "sudo apt update -y",
+      "sudo apt install -y python3 python3-pip python3.12-venv",
+      "python3 -m venv venv",
+      "venv/bin/pip install --upgrade pip",
+      "git clone https://github.com/kubernetes-sigs/kubespray",
+      "cd kubespray/",
+      "venv/bin/pip install -r requirements.txt",
+      "venv/bin/pip install ruamel.yaml"
     ]
     connection {
       type        = "ssh"
