@@ -99,7 +99,7 @@ resource "null_resource" "check_ssh_connection" {
   provisioner "remote-exec" {
     inline = [
       "sudo apt update -y",
-      "sudo apt install python3.12-venv -y",
+      "sudo apt install -y python3 python3-pip python3.12-venv",
       "python3 -m venv venv",
       "source venv/bin/activate",
       "git clone https://github.com/kubernetes-sigs/kubespray",
