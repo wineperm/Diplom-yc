@@ -49,6 +49,17 @@ jobs:
           TF_VAR_ssh_private_key_path: ~/.ssh/id_ed25519
         run: terraform apply -auto-approve
 
+      - name: Generate hosts.yaml
+        run: |
+          terraform output -json master_external_ips > master_ips.json
+          terraform output -json master_internal_ips > master_internal_ips.json
+          terraform output -json worker_internal_ips > worker_internal_ips.json
+          python3 generate_hosts_yaml.py
+
+      - name: Copy hosts.yaml to remote host
+        run: |
+          scp -i ~/.ssh/id_ed25519 hosts.yaml ubuntu@$(terraform output -json master_external_ips | jq -r '.[0]'):/home/ubuntu/kubespray/inventory/mycluster/hosts.yaml
+
       - name: Pause for 1 minute
         run: sleep 60
 
