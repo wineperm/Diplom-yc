@@ -102,18 +102,13 @@ resource "null_resource" "run_additional_commands" {
       #!/bin/bash
 
       sudo apt-get update -y
-      sudo apt install software-properties-common -y
-      sudo add-apt-repository ppa:deadsnakes/ppa -y
-      sudo apt-get update -y
-      sudo apt-get install git pip python3.11 -y
-
-      curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-      python3.11 get-pip.py
-
+      sudo apt-get install -y python3-venv python3-pip git
+      python3 -m venv kubespray-env
+      source kubespray-env/bin/activate
+      pip install ansible ruamel.yaml
       git clone https://github.com/kubernetes-sigs/kubespray.git
       cd kubespray
-      python3.11 -m pip install -r requirements.txt
-      python3.11 -m pip install ruamel.yaml
+      pip install -r requirements.txt
       EOT
     ]
     connection {
