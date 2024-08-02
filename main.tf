@@ -130,7 +130,7 @@ resource "null_resource" "copy_inventory" {
 
   provisioner "remote-exec" {
     inline = [
-      "cp -rfp inventory/sample inventory/mycluster"
+      "cp -rfp ~/kubespray/inventory/sample ~/kubespray/inventory/mycluster"
     ]
     connection {
       type        = "ssh"
