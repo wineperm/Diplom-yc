@@ -142,90 +142,6 @@ resource "null_resource" "copy_inventory" {
   }
 }
 
-resource "null_resource" "wait_for_outputs" {
-  depends_on = [
-    yandex_compute_instance.k8s-master,
-    yandex_compute_instance.k8s-worker
-  ]
-
-  provisioner "local-exec" {
-    command = "echo 'Waiting for outputs to be ready...'"
-  }
-}
-
-resource "null_resource" "check_ssh_connection" {
-  depends_on = [
-    null_resource.wait_for_outputs
-  ]
-
-  provisioner "local-exec" {
-    command = <<EOT
-      #!/bin/sh
-      MASTER_IPS=$(terraform output -json master_external_ips | jq -r '.[]')
-      if [ -z "$MASTER_IPS" ]; then
-        echo "Не найдено внешних IP-адресов мастеров."
-        exit 1
-      fi
-      for host in $MASTER_IPS; do
-        while ! nc -zv $host 22; do
-          echo "Ожидание SSH-соединения с $host..."
-          sleep 10
-        done
-        echo "SSH-соединение с $host установлено"
-      done
-    EOT
-  }
-}
-
-resource "null_resource" "run_additional_commands" {
-  depends_on = [null_resource.check_ssh_connection]
-
-  provisioner "remote-exec" {
-    inline = [
-      <<-EOT
-      #!/bin/bash
-
-      sudo apt-get update -y
-      sudo apt install software-properties-common -y
-      sudo add-apt-repository ppa:deadsnakes/ppa -y
-      sudo apt-get update -y
-      sudo apt-get install git pip python3.11 -y
-
-      curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-      python3.11 get-pip.py
-
-      git clone https://github.com/kubernetes-sigs/kubespray.git
-      cd kubespray
-      python3.11 -m pip install -r requirements.txt
-      python3.11 -m pip install ruamel.yaml
-      EOT
-    ]
-    connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
-      host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
-    }
-  }
-}
-
-resource "null_resource" "copy_inventory" {
-  depends_on = [null_resource.run_additional_commands]
-
-  provisioner "remote-exec" {
-    inline = [
-      "mkdir -p ~/kubespray/inventory/mycluster",
-      "cp -rfp ~/kubespray/inventory/sample ~/kubespray/inventory/mycluster"
-    ]
-    connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
-      host        = yandex_compute_instance.k8s-master[0].network_interface.0.nat_ip_address
-    }
-  }
-}
-
 resource "null_resource" "generate_hosts_yaml" {
   depends_on = [null_resource.copy_inventory]
 
@@ -287,3 +203,4 @@ resource "null_resource" "copy_hosts_yaml" {
     }
   }
 }
+
