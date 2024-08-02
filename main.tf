@@ -150,34 +150,34 @@ resource "null_resource" "generate_hosts_yaml" {
       cat <<EOF > hosts.yaml
 all:
   hosts:
-    %{ for host in yandex_compute_instance.k8s-master ~}
+%{ for host in yandex_compute_instance.k8s-master ~}
     ${host.name}:
       ansible_host: ${host.network_interface.0.ip_address}
       ip: ${host.network_interface.0.ip_address}
       access_ip: ${host.network_interface.0.ip_address}
-    %{ endfor ~}
-    %{ for host in yandex_compute_instance.k8s-worker ~}
+%{ endfor ~}
+%{ for host in yandex_compute_instance.k8s-worker ~}
     ${host.name}:
       ansible_host: ${host.network_interface.0.ip_address}
       ip: ${host.network_interface.0.ip_address}
       access_ip: ${host.network_interface.0.ip_address}
-    %{ endfor ~}
+%{ endfor ~}
   children:
     kube_control_plane:
       hosts:
-        %{ for host in yandex_compute_instance.k8s-master ~}
+%{ for host in yandex_compute_instance.k8s-master ~}
         ${host.name}:
-        %{ endfor ~}
+%{ endfor ~}
     kube_node:
       hosts:
-        %{ for host in yandex_compute_instance.k8s-worker ~}
+%{ for host in yandex_compute_instance.k8s-worker ~}
         ${host.name}:
-        %{ endfor ~}
+%{ endfor ~}
     etcd:
       hosts:
-        %{ for host in yandex_compute_instance.k8s-master ~}
+%{ for host in yandex_compute_instance.k8s-master ~}
         ${host.name}:
-        %{ endfor ~}
+%{ endfor ~}
     k8s_cluster:
       children:
         kube_control_plane:
