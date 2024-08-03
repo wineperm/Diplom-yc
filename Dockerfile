@@ -6,11 +6,9 @@ RUN apt-get update -y && \
     add-apt-repository ppa:deadsnakes/ppa -y && \
     apt-get update -y && \
     apt-get install -y git python3.11 python3.11-venv && \
-    sudo -i && \
     curl https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py && \
     python3.11 /tmp/get-pip.py && \
-    rm /tmp/get-pip.py && \
-    logout
+    rm /tmp/get-pip.py
 
 # Копируем файлы из репозитория в контейнер
 COPY . /opt/kubespray
