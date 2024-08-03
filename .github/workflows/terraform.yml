@@ -61,7 +61,7 @@ jobs:
             cd /root/kubespray &&
             pip3.11 install -r requirements.txt &&
             pip3.11 install ruamel.yaml &&
-            cp -rfp inventory/sample inventory/mycluster &&
+            cp -rfp /root/kubespray/inventory/sample /root/kubespray/inventory/mycluster &&
             terraform output -json > /opt/kubespray/terraform_output.json &&
             python3 /opt/kubespray/generate_hosts.py &&
             cat /root/kubespray/inventory/mycluster/hosts.yaml &&
