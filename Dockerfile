@@ -8,9 +8,7 @@ RUN apt-get update -y && \
     apt-get install -y git python3.11 python3.11-venv curl && \
     curl https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py && \
     python3.11 /tmp/get-pip.py && \
-    rm /tmp/get-pip.py && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    rm /tmp/get-pip.py
 
 # Копируем файлы из репозитория в контейнер
 COPY . /opt/kubespray
