@@ -21,13 +21,13 @@ jobs:
           SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
           SERVICE_ACCOUNT_KEY_FILE: ${{ secrets.SERVICE_ACCOUNT_KEY_FILE }}
         run: |
-          mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          echo "$SSH_PUBLIC_KEY" > ~/.ssh/id_ed25519.pub
-          chmod 600 ~/.ssh/id_ed25519.pub
-          echo "$SERVICE_ACCOUNT_KEY_FILE" > ~/.ssh/authorized_key.json
-          chmod 600 ~/.ssh/authorized_key.json
+          mkdir -p /root/.ssh
+          echo "$SSH_PRIVATE_KEY" > /root/.ssh/id_ed25519
+          chmod 600 /root/.ssh/id_ed25519
+          echo "$SSH_PUBLIC_KEY" > /root/.ssh/id_ed25519.pub
+          chmod 600 /root/.ssh/id_ed25519.pub
+          echo "$SERVICE_ACCOUNT_KEY_FILE" > /root/.ssh/authorized_key.json
+          chmod 600 /root/.ssh/authorized_key.json
 
       - name: Initialize Terraform
         env:
@@ -35,8 +35,8 @@ jobs:
           TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
           TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
           TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
-          TF_VAR_service_account_key_file_path: ~/.ssh/authorized_key.json
-          TF_VAR_ssh_private_key_path: ~/.ssh/id_ed25519
+          TF_VAR_service_account_key_file_path: /root/.ssh/authorized_key.json
+          TF_VAR_ssh_private_key_path: /root/.ssh/id_ed25519
         run: terraform init
 
       - name: Apply Terraform
@@ -45,47 +45,25 @@ jobs:
           TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
           TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
           TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
-          TF_VAR_service_account_key_file_path: ~/.ssh/authorized_key.json
-          TF_VAR_ssh_private_key_path: ~/.ssh/id_ed25519
+          TF_VAR_service_account_key_file_path: /root/.ssh/authorized_key.json
+          TF_VAR_ssh_private_key_path: /root/.ssh/id_ed25519
         run: terraform apply -auto-approve
 
-      - name: Build Docker image
-        run: docker build -t kubespray-container .
+      - name: Pull Docker image
+        run: docker pull timgrt/ubuntu2004-ansible:latest
 
-      - name: Run Docker container and generate hosts.yaml
+      - name: Run Docker container and setup Kubespray
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
-          docker run --name kubespray-container -v $(pwd):/opt/kubespray -d kubespray-container
-          sleep 10  # Даем контейнеру время на запуск
-          docker ps -a -f "name=kubespray-container" --format "{{.Status}}" | grep -q "Up"
-          if [ $? -ne 0 ]; then
-            echo "Container is not running. Exiting."
-            docker logs kubespray-container
-            exit 1
-          fi
-          docker exec kubespray-container bash -c "
-            mkdir -p ~/.ssh
-            echo '$SSH_PRIVATE_KEY' > ~/.ssh/id_ed25519
-            chmod 600 ~/.ssh/id_ed25519
-            git clone https://github.com/kubernetes-sigs/kubespray.git /root/kubespray
-            cd /root/kubespray
-            pip3.11 install -r /opt/kubespray/requirements.txt
-            pip3.11 install ruamel.yaml
-            cp -rfp inventory/sample inventory/mycluster
-            terraform output -json > /opt/kubespray/terraform_output.json
-            python3.11 /opt/kubespray/generate_hosts.py
-            cat /root/kubespray/inventory/mycluster/hosts.yaml
+          docker run -v /root/.ssh/id_ed25519:/root/.ssh/id_ed25519 -v $(pwd):/workspace timgrt/ubuntu2004-ansible:latest /bin/bash -c "
+            git clone https://github.com/kubernetes-sigs/kubespray.git /root/kubespray &&
+            cd /root/kubespray &&
+            pip3.11 install -r requirements.txt &&
+            pip3.11 install ruamel.yaml &&
+            cp -rfp inventory/sample inventory/mycluster &&
+            terraform output -json > /opt/kubespray/terraform_output.json &&
+            python3 /opt/kubespray/generate_hosts.py &&
+            cat /root/kubespray/inventory/mycluster/hosts.yaml &&
             ansible-playbook -i /root/kubespray/inventory/mycluster/hosts.yaml /root/kubespray/cluster.yml -b -vvv
           "
-
-      - name: Clean up on failure
-        if: ${{ failure() }}
-        env:
-          TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
-          TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
-          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
-          TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
-          TF_VAR_service_account_key_file_path: ~/.ssh/authorized_key.json
-          TF_VAR_ssh_private_key_path: ~/.ssh/id_ed25519
-        run: terraform destroy -auto-approve
