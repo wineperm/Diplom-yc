@@ -1,6 +1,7 @@
 import json
 from jinja2 import Template
 
+# Загрузка данных из terraform_output.json
 with open('terraform_output.json') as f:
     data = json.load(f)
 
@@ -8,39 +9,39 @@ with open('terraform_output.json') as f:
 print(json.dumps(data, indent=2))
 
 # Предположим, что структура данных соответствует ожидаемой
-master_instances = data.get('yandex_compute_instance', {}).get('k8s-master', {}).get('value', [])
-worker_instances = data.get('yandex_compute_instance', {}).get('k8s-worker', {}).get('value', [])
+master_instances = data.get('master_internal_ips', {}).get('value', [])
+worker_instances = data.get('worker_internal_ips', {}).get('value', [])
 
 template = Template('''
 all:
   hosts:
 {% for host in master_instances %}
-    {{ host.name }}:
-      ansible_host: {{ host.network_interface.0.ip_address }}
-      ip: {{ host.network_interface.0.ip_address }}
-      access_ip: {{ host.network_interface.0.ip_address }}
+    k8s-master-{{ loop.index0 }}:
+      ansible_host: {{ host }}
+      ip: {{ host }}
+      access_ip: {{ host }}
 {% endfor %}
 {% for host in worker_instances %}
-    {{ host.name }}:
-      ansible_host: {{ host.network_interface.0.ip_address }}
-      ip: {{ host.network_interface.0.ip_address }}
-      access_ip: {{ host.network_interface.0.ip_address }}
+    k8s-worker-{{ loop.index0 }}:
+      ansible_host: {{ host }}
+      ip: {{ host }}
+      access_ip: {{ host }}
 {% endfor %}
   children:
     kube_control_plane:
       hosts:
 {% for host in master_instances %}
-        {{ host.name }}:
+        k8s-master-{{ loop.index0 }}:
 {% endfor %}
     kube_node:
       hosts:
 {% for host in worker_instances %}
-        {{ host.name }}:
+        k8s-worker-{{ loop.index0 }}:
 {% endfor %}
     etcd:
       hosts:
 {% for host in master_instances %}
-        {{ host.name }}:
+        k8s-master-{{ loop.index0 }}:
 {% endfor %}
     k8s_cluster:
       children:
