@@ -4,8 +4,12 @@ from jinja2 import Template
 with open('terraform_output.json') as f:
     data = json.load(f)
 
-master_instances = data['yandex_compute_instance']['k8s-master']['value']
-worker_instances = data['yandex_compute_instance']['k8s-worker']['value']
+# Отладочный вывод для проверки структуры JSON-данных
+print(json.dumps(data, indent=2))
+
+# Предположим, что структура данных соответствует ожидаемой
+master_instances = data.get('yandex_compute_instance', {}).get('k8s-master', {}).get('value', [])
+worker_instances = data.get('yandex_compute_instance', {}).get('k8s-worker', {}).get('value', [])
 
 template = Template('''
 all:
