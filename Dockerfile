@@ -1,21 +1,19 @@
+# Use the official Ubuntu 20.04 image as the base image
 FROM ubuntu:20.04
 
-# Обновляем пакеты и устанавливаем необходимые зависимости
-RUN apt-get update -y && \
+# Update the package list and install necessary packages
+RUN apt-get update && \
+    apt-get install -y git python3 python3-pip && \
+    pip3 install jmespath==1.0.1 jsonschema==4.23.0 netaddr==1.3.0 ruamel.yaml && \
     apt-get install -y software-properties-common && \
-    add-apt-repository ppa:deadsnakes/ppa -y && \
-    apt-get update -y && \
-    apt-get install -y git python3.11 python3.11-venv curl && \
-    curl https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py && \
-    python3.11 /tmp/get-pip.py && \
-    rm /tmp/get-pip.py
+    add-apt-repository --yes --update ppa:ansible/ansible && \
+    apt-get install -y ansible
 
-# Копируем файлы из репозитория в контейнер
-COPY . /opt/kubespray
-WORKDIR /opt/kubespray
+# Set the working directory
+WORKDIR /workspace
 
-# Устанавливаем зависимости из requirements.txt
-RUN pip3.11 install -r /opt/kubespray/requirements.txt
+# Copy the current directory contents into the container at /workspace
+COPY . /workspace
 
-# Устанавливаем команду по умолчанию
+# Set the default command to run when the container starts
 CMD ["bash"]
