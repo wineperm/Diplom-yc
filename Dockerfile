@@ -14,5 +14,8 @@ RUN apt-get update -y && \
 COPY . /opt/kubespray
 WORKDIR /opt/kubespray
 
+# Устанавливаем зависимости из requirements.txt
+RUN pip3.11 install -r /opt/kubespray/requirements.txt
+
 # Устанавливаем команду по умолчанию
 CMD ["bash"]
