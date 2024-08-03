@@ -1,7 +1,7 @@
 import json
 from jinja2 import Template
 
-with open('/opt/kubespray/terraform_output.json') as f:
+with open('/workspace/terraform_output.json') as f:
     data = json.load(f)
 
 master_instances = data['yandex_compute_instance']['k8s-master']['value']
