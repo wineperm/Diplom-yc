@@ -61,8 +61,8 @@ jobs:
             git clone https://github.com/kubernetes-sigs/kubespray.git /root/kubespray &&
             cd /root/kubespray &&
             cp -rfp inventory/sample inventory/mycluster &&
-            terraform output -json > /opt/kubespray/terraform_output.json &&
-            python3 /opt/kubespray/generate_hosts.py &&
+            terraform output -json > /workspace/terraform_output.json &&
+            python3 /workspace/generate_hosts.py &&
             cat /root/kubespray/inventory/mycluster/hosts.yaml &&
             ansible-playbook -i /root/kubespray/inventory/mycluster/hosts.yaml /root/kubespray/cluster.yml -b -vvv
           "
