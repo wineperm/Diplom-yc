@@ -1,42 +1,42 @@
 import json
 from jinja2 import Template
 
-with open('/workspace/terraform_output.json') as f:
+with open('terraform_output.json') as f:
     data = json.load(f)
 
-master_instances = data['yandex_compute_instance']['k8s-master']['value']
-worker_instances = data['yandex_compute_instance']['k8s-worker']['value']
+master_instances = data['master_internal_ips']['value']
+worker_instances = data['worker_internal_ips']['value']
 
 template = Template('''
 all:
   hosts:
 %{ for host in master_instances ~}
-    {{ host.name }}:
-      ansible_host: {{ host.network_interface.0.ip_address }}
-      ip: {{ host.network_interface.0.ip_address }}
-      access_ip: {{ host.network_interface.0.ip_address }}
+    {{ host }}:
+      ansible_host: {{ host }}
+      ip: {{ host }}
+      access_ip: {{ host }}
 %{ endfor ~}
 %{ for host in worker_instances ~}
-    {{ host.name }}:
-      ansible_host: {{ host.network_interface.0.ip_address }}
-      ip: {{ host.network_interface.0.ip_address }}
-      access_ip: {{ host.network_interface.0.ip_address }}
+    {{ host }}:
+      ansible_host: {{ host }}
+      ip: {{ host }}
+      access_ip: {{ host }}
 %{ endfor ~}
   children:
     kube_control_plane:
       hosts:
 %{ for host in master_instances ~}
-        {{ host.name }}:
+        {{ host }}:
 %{ endfor ~}
     kube_node:
       hosts:
 %{ for host in worker_instances ~}
-        {{ host.name }}:
+        {{ host }}:
 %{ endfor ~}
     etcd:
       hosts:
 %{ for host in master_instances ~}
-        {{ host.name }}:
+        {{ host }}:
 %{ endfor ~}
     k8s_cluster:
       children:
@@ -46,5 +46,5 @@ all:
       hosts: {}
 ''')
 
-with open('/root/kubespray/inventory/mycluster/hosts.yaml', 'w') as f:
+with open('hosts.yaml', 'w') as f:
     f.write(template.render(master_instances=master_instances, worker_instances=worker_instances))
