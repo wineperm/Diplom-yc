@@ -72,7 +72,6 @@ jobs:
             apt-get update && apt-get install -y git python3-pip &&
             git clone https://github.com/kubernetes-sigs/kubespray.git /root/kubespray &&
             cd /root/kubespray &&
-            pip3 install -r requirements.txt &&
             pip3 install ruamel.yaml jinja2 &&
             cp -rfp /root/kubespray/inventory/sample /root/kubespray/inventory/mycluster &&
             cp /workspace/hosts.yaml /root/kubespray/inventory/mycluster/hosts.yaml &&
