@@ -57,9 +57,11 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
           docker run --name kubespray-container -v $(pwd):/opt/kubespray -d kubespray-container
+          sleep 10  # Даем контейнеру время на запуск
           docker ps -a -f "name=kubespray-container" --format "{{.Status}}" | grep -q "Up"
           if [ $? -ne 0 ]; then
             echo "Container is not running. Exiting."
+            docker logs kubespray-container
             exit 1
           fi
           docker exec kubespray-container bash -c "
