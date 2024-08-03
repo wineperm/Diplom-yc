@@ -10,34 +10,34 @@ worker_instances = data['worker_internal_ips']['value']
 template = Template('''
 all:
   hosts:
-%{ for host in master_instances ~}
+{% for host in master_instances %}
     {{ host }}:
       ansible_host: {{ host }}
       ip: {{ host }}
       access_ip: {{ host }}
-%{ endfor ~}
-%{ for host in worker_instances ~}
+{% endfor %}
+{% for host in worker_instances %}
     {{ host }}:
       ansible_host: {{ host }}
       ip: {{ host }}
       access_ip: {{ host }}
-%{ endfor ~}
+{% endfor %}
   children:
     kube_control_plane:
       hosts:
-%{ for host in master_instances ~}
+{% for host in master_instances %}
         {{ host }}:
-%{ endfor ~}
+{% endfor %}
     kube_node:
       hosts:
-%{ for host in worker_instances ~}
+{% for host in worker_instances %}
         {{ host }}:
-%{ endfor ~}
+{% endfor %}
     etcd:
       hosts:
-%{ for host in master_instances ~}
+{% for host in master_instances %}
         {{ host }}:
-%{ endfor ~}
+{% endfor %}
     k8s_cluster:
       children:
         kube_control_plane:
