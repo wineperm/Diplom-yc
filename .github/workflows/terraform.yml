@@ -60,8 +60,6 @@ jobs:
             apt-get update && apt-get install -y git python3-pip &&
             git clone https://github.com/kubernetes-sigs/kubespray.git /root/kubespray &&
             cd /root/kubespray &&
-            pip3 install -r requirements.txt &&
-            pip3 install ruamel.yaml &&
             cp -rfp inventory/sample inventory/mycluster &&
             terraform output -json > /opt/kubespray/terraform_output.json &&
             python3 /opt/kubespray/generate_hosts.py &&
