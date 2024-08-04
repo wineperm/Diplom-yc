@@ -5,9 +5,6 @@ from jinja2 import Template
 with open('terraform_output.json') as f:
     data = json.load(f)
 
-# Отладочный вывод для проверки структуры JSON-данных
-print(json.dumps(data, indent=2))
-
 # Предположим, что структура данных соответствует ожидаемой
 master_instances = data.get('master_internal_ips', {}).get('value', [])
 worker_instances = data.get('worker_internal_ips', {}).get('value', [])
@@ -51,5 +48,5 @@ all:
       hosts: {}
 ''')
 
-with open('hosts.yaml', 'w') as f:
+with open('kubespray/inventory/mycluster/hosts.yaml', 'w') as f:
     f.write(template.render(master_instances=master_instances, worker_instances=worker_instances))
