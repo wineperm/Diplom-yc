@@ -20,14 +20,14 @@ all:
       ansible_host: {{ host }}
       ip: {{ host }}
       access_ip: {{ host }}
-      ansible_user: root
+      ansible_user: ubuntu
 {% endfor %}
 {% for host in worker_instances %}
     k8s-worker-{{ loop.index0 }}:
       ansible_host: {{ host }}
       ip: {{ host }}
       access_ip: {{ host }}
-      ansible_user: root
+      ansible_user: ubuntu
 {% endfor %}
   children:
     kube_control_plane:
