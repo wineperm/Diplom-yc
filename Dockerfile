@@ -2,13 +2,11 @@
 FROM ubuntu:24.04
 
 # Update the package list and install necessary packages
-RUN apt update -y && \
-    apt install python3.12-venv -y && \
+RUN sudo apt update -y && \
+    sudo apt install python3.12-venv -y && \
     python3 -m venv venv && \
     source venv/bin/activate && \
-    apt install -y git python3.11 python3.11-distutils && \
-    venv/bin/pip install --upgrade pip
-
+    
 # Set the working directory
 WORKDIR /workspace
 
