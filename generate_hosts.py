@@ -3,7 +3,7 @@ import os
 from jinja2 import Template
 
 # Загрузка данных из terraform_output.json
-with open('terraform_output.json') as f:
+with open('/kubespray/terraform_output.json') as f:
     data = json.load(f)
 
 # Предположим, что структура данных соответствует ожидаемой
@@ -50,7 +50,7 @@ all:
 ''')
 
 # Проверка и создание директории, если она не существует
-output_dir = 'kubespray/inventory/mycluster'
+output_dir = '/kubespray/inventory/mycluster'
 os.makedirs(output_dir, exist_ok=True)
 
 with open(os.path.join(output_dir, 'hosts.yaml'), 'w') as f:
