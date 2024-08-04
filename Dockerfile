@@ -1,33 +1,35 @@
-FROM ubuntu:16.04
+FROM ubuntu:24.04
 
-MAINTAINER Ernestas Poskus <hierco@gmail.com>
+# Install dependencies
+RUN apt-get update -y && \
+    apt-get install -y python3.12-venv git && \
+    apt-get clean
 
-# Install dependencies.
-RUN apt-get update
-RUN apt-get install -y --no-install-recommends \
-    python-software-properties \
-    software-properties-common \
-    rsyslog systemd systemd-cron sudo \
-    iproute curl
+# Create a virtual environment
+RUN python3 -m venv /venv
 
-# Install Python 3.6
-RUN apt-get install -y python3.6 python3.6-dev python3.6-venv
-RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6 1
-RUN update-alternatives --install /usr/bin/pip3 pip3 /usr/bin/pip3.6 1
+# Activate the virtual environment and install requirements
+RUN /venv/bin/pip install --upgrade pip
 
-# Upgrade pip
-RUN pip3 install --upgrade pip
+# Set up the environment
+ENV PATH="/venv/bin:$PATH"
 
-# Install Ansible version 2.17.0
-RUN pip3 install ansible==2.17.0 \
-    && rm -Rf /var/lib/apt/lists/* \
-    && rm -Rf /usr/share/doc && rm -Rf /usr/share/man
+# Clone Kubespray repository
+RUN git clone https://github.com/kubernetes-sigs/kubespray.git /kubespray
 
-RUN apt-get clean
-RUN sed -i 's/^\($ModLoad imklog\)/#\1/' /etc/rsyslog.conf
+# Install Kubespray requirements
+RUN pip install -r /kubespray/requirements.txt
 
-# Install/prepare Ansible
-RUN mkdir -p /etc/ansible/roles
-RUN mkdir -p /opt/ansible/roles
-RUN rm -f /opt/ansible/hosts
-RUN printf '[local]\nlocalhost ansible_connection=local\n' > /etc/ansible/hosts
+# Copy the sample inventory to mycluster
+RUN cp -rfp /kubespray/inventory/sample /kubespray/inventory/mycluster
+
+# Copy the private SSH key into the container
+COPY ~/.ssh/id_ed25519 /root/.ssh/id_ed25519
+RUN chmod 600 /root/.ssh/id_ed25519
+
+# Generate the dynamic hosts.yaml file
+COPY generate_hosts.py /kubespray/generate_hosts.py
+RUN python3 /kubespray/generate_hosts.py
+
+# Run the Ansible playbook
+CMD ["ansible-playbook", "-i", "/kubespray/inventory/mycluster/hosts.yaml", "/kubespray/cluster.yml", "-b", "-v"]
