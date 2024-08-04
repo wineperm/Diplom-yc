@@ -24,6 +24,11 @@ resource "yandex_compute_instance" "k8s-master" {
   }
   metadata = {
     ssh-keys = "ubuntu:${var.ssh_public_key}"
+    user-data = <<-EOT
+      #cloud-config
+      runcmd:
+        - echo 'ubuntu ALL=(ALL) NOPASSWD: ALL' | sudo EDITOR='tee -a' visudo
+    EOT
   }
   service_account_id = var.yc_service_account_id
 }
@@ -54,6 +59,11 @@ resource "yandex_compute_instance" "k8s-worker" {
   }
   metadata = {
     ssh-keys = "ubuntu:${var.ssh_public_key}"
+    user-data = <<-EOT
+      #cloud-config
+      runcmd:
+        - echo 'ubuntu ALL=(ALL) NOPASSWD: ALL' | sudo EDITOR='tee -a' visudo
+    EOT
   }
   service_account_id = var.yc_service_account_id
 }
