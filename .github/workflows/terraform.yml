@@ -108,7 +108,7 @@ jobs:
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
-          docker run --user sudo -v ~/.ssh/id_ed25519:/root/.ssh/id_ed25519 -v $(pwd):/workspace python /bin/bash -c "
+          docker run --user root -v ~/.ssh/id_ed25519:/root/.ssh/id_ed25519 -v $(pwd):/workspace python /bin/bash -c "
             apt-get update && apt-get install -y git ansible &&
             git clone https://github.com/kubernetes-sigs/kubespray.git /root/kubespray &&
             cd /root/kubespray &&
