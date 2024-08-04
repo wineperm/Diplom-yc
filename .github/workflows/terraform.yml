@@ -59,13 +59,18 @@ jobs:
           TF_VAR_ssh_private_key_path: ~/.ssh/id_ed25519
         run: |
           terraform output -json > terraform_output.json
-          cat terraform_output.json  # Debug: Print the JSON output
           python3 generate_hosts.py
-          cat hosts.yaml  # Debug: Print the generated hosts.yaml file
 
       - name: Build Docker image
         run: |
           docker build -t wineperm_dc/ubuntu2004-ansible:latest .
+
+      - name: Check Python dependencies
+        run: |
+          docker run --rm wineperm_dc/ubuntu2004-ansible:latest /bin/bash -c "
+            source venv/bin/activate &&
+            pip list
+          "
 
       - name: Run Docker container and setup Kubespray
         env:
@@ -76,7 +81,6 @@ jobs:
             cd /root/kubespray &&
             cp -rfp /root/kubespray/inventory/sample /root/kubespray/inventory/mycluster &&
             cp /workspace/hosts.yaml /root/kubespray/inventory/mycluster/hosts.yaml &&
-            cat /root/kubespray/inventory/mycluster/hosts.yaml &&
             ansible-playbook -i /root/kubespray/inventory/mycluster/hosts.yaml /root/kubespray/cluster.yml -b -vvv
           "
 
