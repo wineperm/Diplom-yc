@@ -1,14 +1,12 @@
 import json
-import os
 from jinja2 import Template
 
-# Проверка существования файла terraform_output.json
-if not os.path.exists('/kubespray/terraform_output.json'):
-    raise FileNotFoundError("terraform_output.json not found")
-
 # Загрузка данных из terraform_output.json
-with open('/kubespray/terraform_output.json') as f:
+with open('terraform_output.json') as f:
     data = json.load(f)
+
+# Отладочный вывод для проверки структуры JSON-данных
+print(json.dumps(data, indent=2))
 
 # Предположим, что структура данных соответствует ожидаемой
 master_instances = data.get('master_internal_ips', {}).get('value', [])
@@ -53,9 +51,5 @@ all:
       hosts: {}
 ''')
 
-# Проверка и создание директории, если она не существует
-output_dir = '/kubespray/inventory/mycluster'
-os.makedirs(output_dir, exist_ok=True)
-
-with open(os.path.join(output_dir, 'hosts.yaml'), 'w') as f:
+with open('hosts.yaml', 'w') as f:
     f.write(template.render(master_instances=master_instances, worker_instances=worker_instances))
