@@ -3,7 +3,7 @@ FROM ubuntu:24.04
 
 # Обновляем список пакетов и устанавливаем необходимые пакеты
 RUN apt update -y && \
-    apt install -y python3.12 python3.12-venv && \
+    apt install -y python3.12 python3.12-venv bash && \
     ln -s /usr/bin/python3.12 /usr/bin/python3
 
 # Устанавливаем виртуальное окружение Python
@@ -16,8 +16,7 @@ WORKDIR /workspace
 COPY . /workspace
 
 # Устанавливаем Python зависимости
-RUN source venv/bin/activate && \
-    pip install -r requirements.txt
+RUN /bin/bash -c "source venv/bin/activate && pip install -r requirements.txt"
 
 # Устанавливаем команду по умолчанию для запуска контейнера
 CMD ["bash"]
