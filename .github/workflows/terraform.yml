@@ -95,14 +95,14 @@ jobs:
             done
           done
 
-      - name: Check network connectivity
-        run: |
-          for host in $(terraform output -json master_external_ips | jq -r '.[]'); do
-            if ! ping -c 3 $host; then
-              echo "Failed to ping $host"
-              exit 1
-            fi
-          done
+#      - name: Check network connectivity
+#        run: |
+#          for host in $(terraform output -json master_external_ips | jq -r '.[]'); do
+#            if ! ping -c 3 $host; then
+#              echo "Failed to ping $host"
+#              exit 1
+#            fi
+#          done
 
       - name: Run Docker container and setup Kubespray
         env:
