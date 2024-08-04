@@ -2,18 +2,22 @@
 FROM ubuntu:20.04
 
 # Update the package list and install necessary packages
-RUN apt-get update && \
-    apt-get install -y git python3 python3-pip && \
-    pip3 install jmespath==1.0.1 jsonschema==4.23.0 netaddr==1.3.0 ruamel.yaml && \
-    apt-get install -y software-properties-common && \
-    add-apt-repository --yes --update ppa:ansible/ansible && \
-    apt-get install -y ansible
+RUN apt update -y && \
+    apt install python3.12-venv -y && \
+    python3 -m venv venv && \
+    source venv/bin/activate && \
+    apt install -y git python3.11 python3.11-distutils && \
+    venv/bin/pip install --upgrade pip
 
 # Set the working directory
 WORKDIR /workspace
 
 # Copy the current directory contents into the container at /workspace
 COPY . /workspace
+
+# Install Python dependencies
+RUN source venv/bin/activate && \
+    pip install -r requirements.txt
 
 # Set the default command to run when the container starts
 CMD ["bash"]
