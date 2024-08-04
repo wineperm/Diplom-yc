@@ -57,4 +57,5 @@ all:
 output_dir = '/kubespray/inventory/mycluster'
 os.makedirs(output_dir, exist_ok=True)
 
-with open
+with open(os.path.join(output_dir, 'hosts.yaml'), 'w') as f:
+    f.write(template.render(master_instances=master_instances, worker_instances=worker_instances))
