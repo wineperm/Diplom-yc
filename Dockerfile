@@ -1,21 +1,23 @@
-# Use the official Ubuntu 24.04 image as the base image
+# Используем официальный образ Ubuntu 24.04 в качестве базового образа
 FROM ubuntu:24.04
 
-# Update the package list and install necessary packages
+# Обновляем список пакетов и устанавливаем необходимые пакеты
 RUN apt update -y && \
-    apt install python3.12-venv -y && \
-    python3 -m venv venv && \
-    source venv/bin/activate && \
-    
-# Set the working directory
+    apt install -y python3.12 python3.12-venv && \
+    ln -s /usr/bin/python3.12 /usr/bin/python3
+
+# Устанавливаем виртуальное окружение Python
+RUN python3 -m venv venv
+
+# Устанавливаем рабочую директорию
 WORKDIR /workspace
 
-# Copy the current directory contents into the container at /workspace
+# Копируем содержимое текущей директории в контейнер в /workspace
 COPY . /workspace
 
-# Install Python dependencies
+# Устанавливаем Python зависимости
 RUN source venv/bin/activate && \
     pip install -r requirements.txt
 
-# Set the default command to run when the container starts
+# Устанавливаем команду по умолчанию для запуска контейнера
 CMD ["bash"]
