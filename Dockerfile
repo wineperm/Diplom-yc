@@ -1,25 +1,27 @@
-# Используем официальный образ Ubuntu 24.04 в качестве базового образа
-FROM ubuntu:24.04
+FROM ubuntu:16.04
 
-# Обновляем список пакетов и устанавливаем необходимые пакеты
-RUN apt update -y && \
-    apt install -y python3.12 python3.12-venv bash git && \
-    ln -s /usr/bin/python3.12 /usr/bin/python3
+# Install dependencies.
+RUN apt-get update
+RUN apt-get install -y --no-install-recommends \
+    python-software-properties \
+    software-properties-common \
+    rsyslog systemd systemd-cron sudo \
+    iproute curl
 
-# Устанавливаем рабочую директорию
-WORKDIR /workspace
+RUN apt-get install -y python3-pip python3-dev
 
-# Копируем содержимое текущей директории в контейнер в /workspace
-COPY . /workspace
+RUN pip3 install --upgrade pip
 
-# Создаем виртуальное окружение Python
-RUN python3 -m venv venv
+# Install Ansible version 2.17.0
+RUN pip3 install ansible==2.17.0 \
+    && rm -Rf /var/lib/apt/lists/* \
+    && rm -Rf /usr/share/doc && rm -Rf /usr/share/man
 
-# Устанавливаем Python зависимости
-RUN /bin/bash -c "source venv/bin/activate && pip install -r requirements.txt"
+RUN apt-get clean
+RUN sed -i 's/^\($ModLoad imklog\)/#\1/' /etc/rsyslog.conf
 
-# Устанавливаем Ansible
-RUN /bin/bash -c "source venv/bin/activate && pip install ansible"
-
-# Устанавливаем команду по умолчанию для запуска контейнера
-CMD ["bash"]
+# Install/prepare Ansible
+RUN mkdir -p /etc/ansible/roles
+RUN mkdir -p /opt/ansible/roles
+RUN rm -f /opt/ansible/hosts
+RUN printf '[local]\nlocalhost ansible_connection=local\n' > /etc/ansible/hosts
