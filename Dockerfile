@@ -2,8 +2,8 @@
 FROM ubuntu:24.04
 
 # Update the package list and install necessary packages
-RUN sudo apt update -y && \
-    sudo apt install python3.12-venv -y && \
+RUN apt update -y && \
+    apt install python3.12-venv -y && \
     python3 -m venv venv && \
     source venv/bin/activate && \
     
