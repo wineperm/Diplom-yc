@@ -61,6 +61,24 @@ jobs:
           terraform output -json > terraform_output.json
           python3 generate_hosts.py
 
+      - name: Test SSH connection
+        run: |
+          for host in $(terraform output -json master_external_ips | jq -r '.[]'); do
+            ssh -o BatchMode=yes -o StrictHostKeyChecking=no ubuntu@$host "echo SSH connection successful"
+          done
+          for host in $(terraform output -json worker_external_ips | jq -r '.[]'); do
+            ssh -o BatchMode=yes -o StrictHostKeyChecking=no ubuntu@$host "echo SSH connection successful"
+          done
+
+      - name: Test sudo access
+        run: |
+          for host in $(terraform output -json master_external_ips | jq -r '.[]'); do
+            ssh -o BatchMode=yes -o StrictHostKeyChecking=no ubuntu@$host "sudo -n true"
+          done
+          for host in $(terraform output -json worker_external_ips | jq -r '.[]'); do
+            ssh -o BatchMode=yes -o StrictHostKeyChecking=no ubuntu@$host "sudo -n true"
+          done
+
       - name: Run Docker container and setup Kubespray
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
