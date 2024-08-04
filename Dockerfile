@@ -24,8 +24,11 @@ RUN pip install -r /kubespray/requirements.txt
 RUN cp -rfp /kubespray/inventory/sample /kubespray/inventory/mycluster
 
 # Copy the private SSH key into the container
-COPY ~/.ssh/id_ed25519 /root/.ssh/id_ed25519
+COPY id_ed25519 /root/.ssh/id_ed25519
 RUN chmod 600 /root/.ssh/id_ed25519
+
+# Copy the terraform_output.json file into the container
+COPY terraform_output.json /kubespray/terraform_output.json
 
 # Generate the dynamic hosts.yaml file
 COPY generate_hosts.py /kubespray/generate_hosts.py
