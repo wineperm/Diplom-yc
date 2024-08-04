@@ -1,4 +1,4 @@
-# Use the official Ubuntu 20.04 image as the base image
+# Use the official Ubuntu 24.04 image as the base image
 FROM ubuntu:24.04
 
 # Update the package list and install necessary packages
