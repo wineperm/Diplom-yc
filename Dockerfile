@@ -1,5 +1,5 @@
 # Use the official Ubuntu 20.04 image as the base image
-FROM ubuntu:20.04
+FROM ubuntu:24.04
 
 # Update the package list and install necessary packages
 RUN apt update -y && \
