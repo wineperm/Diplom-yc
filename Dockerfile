@@ -3,7 +3,7 @@ FROM ubuntu:24.04
 
 # Обновляем список пакетов и устанавливаем необходимые пакеты
 RUN apt update -y && \
-    apt install -y python3.12 python3.12-venv bash && \
+    apt install -y python3.12 python3.12-venv bash git && \
     ln -s /usr/bin/python3.12 /usr/bin/python3
 
 # Устанавливаем рабочую директорию
