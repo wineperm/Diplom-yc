@@ -81,6 +81,7 @@ jobs:
             cd /root/kubespray &&
             cp -rfp /root/kubespray/inventory/sample /root/kubespray/inventory/mycluster &&
             cp /workspace/hosts.yaml /root/kubespray/inventory/mycluster/hosts.yaml &&
+            cat /root/kubespray/inventory/mycluster/hosts.yaml &&
             ansible-playbook -i /root/kubespray/inventory/mycluster/hosts.yaml /root/kubespray/cluster.yml -b -vvv
           "
 
