@@ -18,5 +18,8 @@ RUN python3 -m venv venv
 # Устанавливаем Python зависимости
 RUN /bin/bash -c "source venv/bin/activate && pip install -r requirements.txt"
 
+# Устанавливаем Ansible
+RUN /bin/bash -c "source venv/bin/activate && pip install ansible"
+
 # Устанавливаем команду по умолчанию для запуска контейнера
 CMD ["bash"]
