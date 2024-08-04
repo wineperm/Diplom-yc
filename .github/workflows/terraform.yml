@@ -59,7 +59,9 @@ jobs:
           TF_VAR_ssh_private_key_path: ~/.ssh/id_ed25519
         run: |
           terraform output -json > terraform_output.json
+          cat terraform_output.json  # Debug: Print the JSON output
           python3 generate_hosts.py
+          cat hosts.yaml  # Debug: Print the generated hosts.yaml file
 
       - name: Build Docker image
         run: |
