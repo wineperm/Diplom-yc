@@ -1,4 +1,5 @@
 import json
+import os
 from jinja2 import Template
 
 # Загрузка данных из terraform_output.json
@@ -48,5 +49,9 @@ all:
       hosts: {}
 ''')
 
-with open('kubespray/inventory/mycluster/hosts.yaml', 'w') as f:
+# Проверка и создание директории, если она не существует
+output_dir = 'kubespray/inventory/mycluster'
+os.makedirs(output_dir, exist_ok=True)
+
+with open(os.path.join(output_dir, 'hosts.yaml'), 'w') as f:
     f.write(template.render(master_instances=master_instances, worker_instances=worker_instances))
