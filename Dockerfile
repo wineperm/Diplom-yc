@@ -31,5 +31,8 @@ RUN chmod 600 /root/.ssh/id_ed25519
 COPY generate_hosts.py /kubespray/generate_hosts.py
 RUN python3 /kubespray/generate_hosts.py
 
+# Print the contents of hosts.yaml
+RUN cat /kubespray/inventory/mycluster/hosts.yaml
+
 # Run the Ansible playbook
 CMD ["ansible-playbook", "-i", "/kubespray/inventory/mycluster/hosts.yaml", "/kubespray/cluster.yml", "-b", "-v"]
