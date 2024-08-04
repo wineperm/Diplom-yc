@@ -66,7 +66,8 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
           docker run -v ~/.ssh/id_ed25519:/root/.ssh/id_ed25519 -v $(pwd):/workspace demisto/ansible-runner:1.0.0.106811 /bin/bash -c "
-            git clone https://github.com/kubernetes-sigs/kubespray.git /root/kubespray \
+            apt-get update && apt-get install -y git \
+            && git clone https://github.com/kubernetes-sigs/kubespray.git /root/kubespray \
             && cd /root/kubespray \
             && cp -rfp /root/kubespray/inventory/sample /root/kubespray/inventory/mycluster \
             && cp /workspace/hosts.yaml /root/kubespray/inventory/mycluster/hosts.yaml \
