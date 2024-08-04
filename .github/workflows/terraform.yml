@@ -125,7 +125,7 @@ jobs:
             done
 
             # Run ansible-playbook
-            ansible-playbook -i /root/kubespray/inventory/mycluster/hosts.yaml /root/kubespray/cluster.yml -b -vvv
+            ansible-playbook -i /root/kubespray/inventory/mycluster/hosts.yaml /root/kubespray/cluster.yml -vvv
           "
 
       - name: Destroy Terraform Infrastructure
