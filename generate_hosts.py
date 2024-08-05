@@ -5,25 +5,24 @@ from jinja2 import Template
 with open('/home/ubuntu/terraform_output.json') as f:
     data = json.load(f)
 
-# Отладочный вывод для проверки структуры JSON-данных
-print(json.dumps(data, indent=2))
-
 # Предположим, что структура данных соответствует ожидаемой
 master_instances = data.get('master_internal_ips', {}).get('value', [])
 worker_instances = data.get('worker_internal_ips', {}).get('value', [])
+master_names = data.get('master_names', {}).get('value', [])
+worker_names = data.get('worker_names', {}).get('value', [])
 
 template = Template('''
 all:
   hosts:
-{% for host in master_instances %}
-    k8s-master-{{ loop.index0 }}:
+{% for host, name in zip(master_instances, master_names) %}
+    {{ name }}:
       ansible_host: {{ host }}
       ip: {{ host }}
       access_ip: {{ host }}
       ansible_user: ubuntu
 {% endfor %}
-{% for host in worker_instances %}
-    k8s-worker-{{ loop.index0 }}:
+{% for host, name in zip(worker_instances, worker_names) %}
+    {{ name }}:
       ansible_host: {{ host }}
       ip: {{ host }}
       access_ip: {{ host }}
@@ -32,18 +31,18 @@ all:
   children:
     kube_control_plane:
       hosts:
-{% for host in master_instances %}
-        k8s-master-{{ loop.index0 }}:
+{% for name in master_names %}
+        {{ name }}:
 {% endfor %}
     kube_node:
       hosts:
-{% for host in worker_instances %}
-        k8s-worker-{{ loop.index0 }}:
+{% for name in worker_names %}
+        {{ name }}:
 {% endfor %}
     etcd:
       hosts:
-{% for host in master_instances %}
-        k8s-master-{{ loop.index0 }}:
+{% for name in master_names %}
+        {{ name }}:
 {% endfor %}
     k8s_cluster:
       children:
@@ -55,4 +54,4 @@ all:
 
 # Запись сгенерированного файла hosts.yaml в нужное место
 with open('/home/ubuntu/kubespray/inventory/mycluster/hosts.yaml', 'w') as f:
-    f.write(template.render(master_instances=master_instances, worker_instances=worker_instances))
+    f.write(template.render(master_instances=master_instances, worker_instances=worker_instances, master_names=master_names, worker_names=worker_names))
