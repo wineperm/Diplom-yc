@@ -25,8 +25,8 @@ $(for i in "${!worker_instances[@]}"; do echo "        ${worker_names[$i]}:"; do
 $(for i in "${!master_instances[@]}"; do echo "        ${master_names[$i]}:"; done)
     k8s_cluster:
       children:
-        kube_control_plane:
-        kube_node:
+        kube_control_plane: {}
+        kube_node: {}
     calico_rr:
       hosts: {}
 EOF
