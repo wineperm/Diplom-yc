@@ -95,26 +95,60 @@ jobs:
             done
           done
 
-      
+      - name: Create runner VM
+        env:
+          TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+          TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+          TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+          TF_VAR_service_account_key_file_path: ~/.ssh/authorized_key.json
+          TF_VAR_ssh_private_key_path: ~/.ssh/id_ed25519
+        run: terraform apply -target=yandex_compute_instance.runner -auto-approve
 
-      - name: Run Docker container on remote host
+      - name: Wait for runner VM to be available
+        run: |
+          RUNNER_IP=$(terraform output -json runner_external_ip | jq -r '.')
+          start_time=$(date +%s)
+          timeout=180
+          while ! ssh -o BatchMode=yes -o StrictHostKeyChecking=no ubuntu@$RUNNER_IP "echo SSH connection successful"; do
+            current_time=$(date +%s)
+            elapsed_time=$((current_time - start_time))
+            if [ $elapsed_time -ge $timeout ]; then
+              echo "Timeout waiting for SSH to be available on $RUNNER_IP"
+              exit 1
+            fi
+            echo "Waiting for SSH to be available on $RUNNER_IP..."
+            sleep 10
+          done
+
+      - name: Run tasks on runner VM
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          REMOTE_HOST: ${{ secrets.REMOTE_HOST }} # Укажите IP-адрес мастер-ноды
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$REMOTE_HOST "
-            sudo apt-get update && sudo apt-get install -y docker.io &&
-            sudo docker run --user root -v ~/.ssh/id_ed25519:/root/.ssh/id_ed25519 -v $(pwd):/workspace python /bin/bash -c '
-              apt-get update && apt-get install -y git ansible &&
-              git clone https://github.com/kubernetes-sigs/kubespray.git /root/kubespray &&
-              cd /root/kubespray &&
-              pip3 install -r requirements.txt &&
-              cp -rfp /root/kubespray/inventory/sample /root/kubespray/inventory/mycluster &&
-              cp /workspace/hosts.yaml /root/kubespray/inventory/mycluster/hosts.yaml &&
-              cat /root/kubespray/inventory/mycluster/hosts.yaml &&
-              ansible-playbook -i /root/kubespray/inventory/mycluster/hosts.yaml /root/kubespray/cluster.yml -b -vvvv
-            '
+          RUNNER_IP=$(terraform output -json runner_external_ip | jq -r '.')
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$RUNNER_IP "
+            sudo apt-get update && sudo apt-get install -y git ansible &&
+            git clone https://github.com/kubernetes-sigs/kubespray.git /home/ubuntu/kubespray &&
+            cd /home/ubuntu/kubespray &&
+            pip3 install -r requirements.txt &&
+            cp -rfp /home/ubuntu/kubespray/inventory/sample /home/ubuntu/kubespray/inventory/mycluster &&
+            scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 hosts.yaml ubuntu@$RUNNER_IP:/home/ubuntu/kubespray/inventory/mycluster/hosts.yaml &&
+            cat /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml &&
+            ansible-playbook -i /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml /home/ubuntu/kubespray/cluster.yml -b -vvvv
           "
+
+      - name: Destroy runner VM
+        env:
+          TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+          TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+          TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+          TF_VAR_service_account_key_file_path: ~/.ssh/authorized_key.json
+          TF_VAR_ssh_private_key_path: ~/.ssh/id_ed25519
+        run: terraform destroy -target=yandex_compute_instance.runner -auto-approve
+
+      - name: Wait for 1 minute
+        run: sleep 60
 
       - name: Destroy Terraform Infrastructure
         if: always()
