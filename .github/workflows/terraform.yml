@@ -115,7 +115,9 @@ jobs:
         run: |
           RUNNER_IP=$(terraform output -json runner_external_ip | jq -r '.')
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$RUNNER_IP "
-            sudo apt-get update && sudo apt-get install -y git ansible python3-venv jq &&
+            sudo apt-get update && sudo apt-get install -y git ansible python3-venv jq wget &&
+            wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq &&
+            chmod +x /usr/bin/yq &&
             python3 -m venv venv &&
             source venv/bin/activate &&
             git clone https://github.com/kubernetes-sigs/kubespray.git /home/ubuntu/kubespray &&
