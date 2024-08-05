@@ -31,5 +31,5 @@ $(for i in "${!master_instances[@]}"; do echo "        ${master_names[$i]}:"; do
       hosts: {}
 EOF
 
-# Форматирование YAML файла с помощью Python и PyYAML
-python3 -c "import yaml; print(yaml.dump(yaml.safe_load(open('/home/ubuntu/kubespray/inventory/mycluster/hosts.yaml')), default_flow_style=False))" > /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml.tmp && mv /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml.tmp /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml
+# Форматирование YAML файла с помощью yq
+yq eval -i /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml
