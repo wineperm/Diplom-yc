@@ -95,28 +95,25 @@ jobs:
             done
           done
 
-#      - name: Check network connectivity
-#        run: |
-#          for host in $(terraform output -json master_external_ips | jq -r '.[]'); do
-#            if ! ping -c 3 $host; then
-#              echo "Failed to ping $host"
-#              exit 1
-#            fi
-#          done
+      
 
-      - name: Run Docker container and setup Kubespray
+      - name: Run Docker container on remote host
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          REMOTE_HOST: ${{ secrets.REMOTE_HOST }} # Укажите IP-адрес мастер-ноды
         run: |
-          docker run --user root -v ~/.ssh/id_ed25519:/root/.ssh/id_ed25519 -v $(pwd):/workspace python /bin/bash -c "
-            apt-get update && apt-get install -y git ansible &&
-            git clone https://github.com/kubernetes-sigs/kubespray.git /root/kubespray &&
-            cd /root/kubespray &&
-            pip3 install -r requirements.txt &&
-            cp -rfp /root/kubespray/inventory/sample /root/kubespray/inventory/mycluster &&
-            cp /workspace/hosts.yaml /root/kubespray/inventory/mycluster/hosts.yaml &&
-            cat /root/kubespray/inventory/mycluster/hosts.yaml &&
-            ansible-playbook -i /root/kubespray/inventory/mycluster/hosts.yaml /root/kubespray/cluster.yml -b -vvvv
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$REMOTE_HOST "
+            sudo apt-get update && sudo apt-get install -y docker.io &&
+            sudo docker run --user root -v ~/.ssh/id_ed25519:/root/.ssh/id_ed25519 -v $(pwd):/workspace python /bin/bash -c '
+              apt-get update && apt-get install -y git ansible &&
+              git clone https://github.com/kubernetes-sigs/kubespray.git /root/kubespray &&
+              cd /root/kubespray &&
+              pip3 install -r requirements.txt &&
+              cp -rfp /root/kubespray/inventory/sample /root/kubespray/inventory/mycluster &&
+              cp /workspace/hosts.yaml /root/kubespray/inventory/mycluster/hosts.yaml &&
+              cat /root/kubespray/inventory/mycluster/hosts.yaml &&
+              ansible-playbook -i /root/kubespray/inventory/mycluster/hosts.yaml /root/kubespray/cluster.yml -b -vvvv
+            '
           "
 
       - name: Destroy Terraform Infrastructure
