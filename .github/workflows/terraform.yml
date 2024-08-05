@@ -49,8 +49,18 @@ jobs:
           TF_VAR_ssh_private_key_path: ~/.ssh/id_ed25519
         run: terraform apply -auto-approve
 
-      - name: Generate terraform_output.json
-        run: terraform output -json > terraform_output.json
+      - name: Generate hosts.yaml
+        env:
+          TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+          TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+          TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+          TF_VAR_service_account_key_file_path: ~/.ssh/authorized_key.json
+          TF_VAR_ssh_private_key_path: ~/.ssh/id_ed25519
+        run: |
+          terraform output -json > terraform_output.json
+          python3 generate_hosts.py
+          ls -l /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml
 
       - name: Wait for SSH to be available
         run: |
@@ -123,8 +133,7 @@ jobs:
             cd /home/ubuntu/kubespray &&
             pip install -r requirements.txt &&
             cp -rfp /home/ubuntu/kubespray/inventory/sample /home/ubuntu/kubespray/inventory/mycluster &&
-            chmod +x /home/ubuntu/generate_hosts.py &&
-            python3 /home/ubuntu/generate_hosts.py &&
+            scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 hosts.yaml ubuntu@$RUNNER_IP:/home/ubuntu/kubespray/inventory/mycluster/hosts.yaml &&
             cat /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml &&
             ansible-playbook -i /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml /home/ubuntu/kubespray/cluster.yml -b -vvvv
           "
