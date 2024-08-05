@@ -49,6 +49,9 @@ jobs:
           TF_VAR_ssh_private_key_path: ~/.ssh/id_ed25519
         run: terraform apply -auto-approve
 
+      - name: Generate terraform_output.json
+        run: terraform output -json > terraform_output.json
+
       - name: Wait for SSH to be available
         run: |
           for host in $(terraform output -json master_external_ips | jq -r '.[]'); do
@@ -92,6 +95,13 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$RUNNER_IP "chmod 600 ~/.ssh/id_ed25519"
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$RUNNER_IP "chmod 600 ~/.ssh/id_ed25519.pub"
 
+      - name: Copy terraform_output.json to runner VM
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          RUNNER_IP=$(terraform output -json runner_external_ip | jq -r '.')
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 terraform_output.json ubuntu@$RUNNER_IP:/home/ubuntu/terraform_output.json
+
       - name: Copy generate_hosts.sh to runner VM
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -112,7 +122,6 @@ jobs:
             cd /home/ubuntu/kubespray &&
             pip install -r requirements.txt &&
             cp -rfp /home/ubuntu/kubespray/inventory/sample /home/ubuntu/kubespray/inventory/mycluster &&
-            terraform output -json > terraform_output.json &&
             chmod +x /home/ubuntu/generate_hosts.sh &&
             /home/ubuntu/generate_hosts.sh &&
             cat /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml &&
