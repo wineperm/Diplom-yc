@@ -60,6 +60,7 @@ jobs:
         run: |
           terraform output -json > terraform_output.json
           python3 generate_hosts.py
+          ls -l hosts.yaml
 
       - name: Wait for SSH to be available
         run: |
@@ -121,6 +122,18 @@ jobs:
             sleep 10
           done
 
+      - name: Copy hosts.yaml to runner VM
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          RUNNER_IP=$(terraform output -json runner_external_ip | jq -r '.')
+          if [ -f hosts.yaml ]; then
+            scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 hosts.yaml ubuntu@$RUNNER_IP:/home/ubuntu/kubespray/inventory/mycluster/hosts.yaml
+          else
+            echo "hosts.yaml not found!"
+            exit 1
+          fi
+
       - name: Run tasks on runner VM
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -134,7 +147,6 @@ jobs:
             source venv/bin/activate &&
             pip install -r requirements.txt &&
             cp -rfp /home/ubuntu/kubespray/inventory/sample /home/ubuntu/kubespray/inventory/mycluster &&
-            scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 hosts.yaml ubuntu@$RUNNER_IP:/home/ubuntu/kubespray/inventory/mycluster/hosts.yaml &&
             cat /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml &&
             ansible-playbook -i /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml /home/ubuntu/kubespray/cluster.yml -b -vvvv
           "
