@@ -5,12 +5,12 @@ resource "yandex_compute_instance" "runner" {
   resources {
     cores         = 2
     memory        = 4
-    core_fraction = 5
+    core_fraction = 50
   }
   boot_disk {
     initialize_params {
       image_id = "fd8k2vlv3b3duv812ama"
-      type     = "network-hdd"
+      type     = "network-ssd"
       size     = 10
     }
   }
