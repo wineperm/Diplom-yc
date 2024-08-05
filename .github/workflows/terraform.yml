@@ -116,7 +116,7 @@ jobs:
           MASTER_IPS=$(terraform output -json master_internal_ips | jq -r '.[]')
           WORKER_IPS=$(terraform output -json worker_internal_ips | jq -r '.[]')
           for ip in $MASTER_IPS $WORKER_IPS; do
-            ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$ip "apt update -y"
+            ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$ip "apt-get update -y"
           done
 
       - name: Run tasks on runner VM
