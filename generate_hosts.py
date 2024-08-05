@@ -54,4 +54,4 @@ all:
 
 # Запись сгенерированного файла hosts.yaml в нужное место
 with open('/home/ubuntu/kubespray/inventory/mycluster/hosts.yaml', 'w') as f:
-    f.write(template.render(master_instances=master_instances, worker_instances=worker_instances, master_names=master_names, worker_names=worker_names))
+    f.write(template.render(master_instances=master_instances, worker_instances=worker_instances, master_names=master_names, worker_names=worker_names, zip=zip))
