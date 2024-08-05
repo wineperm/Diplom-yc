@@ -19,14 +19,12 @@ all:
       ansible_host: {{ host }}
       ip: {{ host }}
       access_ip: {{ host }}
-#      ansible_user: ubuntu
 {% endfor %}
 {% for host, name in zip(worker_instances, worker_names) %}
     {{ name }}:
       ansible_host: {{ host }}
       ip: {{ host }}
       access_ip: {{ host }}
-#      ansible_user: ubuntu
 {% endfor %}
   children:
     kube_control_plane:
