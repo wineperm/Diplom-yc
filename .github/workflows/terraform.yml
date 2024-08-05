@@ -109,16 +109,6 @@ jobs:
           RUNNER_IP=$(terraform output -json runner_external_ip | jq -r '.')
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 generate_hosts.py ubuntu@$RUNNER_IP:/home/ubuntu/generate_hosts.py
 
-      - name: Ping all nodes
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-        run: |
-          MASTER_IPS=$(terraform output -json master_internal_ips | jq -r '.[]')
-          WORKER_IPS=$(terraform output -json worker_internal_ips | jq -r '.[]')
-          for ip in $MASTER_IPS $WORKER_IPS; do
-            ping -c 5 $ip
-          done
-
       - name: Run tasks on runner VM
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
