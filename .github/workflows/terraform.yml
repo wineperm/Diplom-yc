@@ -115,10 +115,9 @@ jobs:
         run: |
           RUNNER_IP=$(terraform output -json runner_external_ip | jq -r '.')
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$RUNNER_IP "
-            sudo apt-get update && sudo apt-get install -y git ansible python3-venv python3-pip &&
+            sudo apt-get update && sudo apt-get install -y git python3-venv python3-pip &&
             python3 -m venv venv &&
             source venv/bin/activate &&
-            pip install jinja2 &&
             git clone https://github.com/kubernetes-sigs/kubespray.git /home/ubuntu/kubespray &&
             cd /home/ubuntu/kubespray &&
             pip install -r requirements.txt &&
