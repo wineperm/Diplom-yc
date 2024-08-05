@@ -49,6 +49,9 @@ jobs:
           TF_VAR_ssh_private_key_path: ~/.ssh/id_ed25519
         run: terraform apply -auto-approve
 
+      - name: Generate terraform_output.json
+        run: terraform output -json > terraform_output.json
+
       - name: Wait for SSH to be available
         run: |
           for host in $(terraform output -json master_external_ips | jq -r '.[]'); do
