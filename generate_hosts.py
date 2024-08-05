@@ -53,5 +53,6 @@ all:
       hosts: {}
 ''')
 
-with open('hosts.yaml', 'w') as f:
+# Запись сгенерированного файла hosts.yaml в нужное место
+with open('/home/ubuntu/kubespray/inventory/mycluster/hosts.yaml', 'w') as f:
     f.write(template.render(master_instances=master_instances, worker_instances=worker_instances))
