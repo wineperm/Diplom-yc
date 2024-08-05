@@ -30,3 +30,6 @@ $(for i in "${!master_instances[@]}"; do echo "        ${master_names[$i]}:"; do
     calico_rr:
       hosts: {}
 EOF
+
+# Форматирование YAML файла с помощью yq
+yq eval -i /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml
