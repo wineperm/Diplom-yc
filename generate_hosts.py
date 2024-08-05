@@ -1,3 +1,4 @@
+import os
 import json
 from jinja2 import Template
 
@@ -53,6 +54,12 @@ all:
       hosts: {}
 ''')
 
+# Путь к файлу hosts.yaml
+hosts_yaml_path = '/home/ubuntu/kubespray/inventory/mycluster/hosts.yaml'
+
+# Создание директории, если она не существует
+os.makedirs(os.path.dirname(hosts_yaml_path), exist_ok=True)
+
 # Запись сгенерированного файла hosts.yaml в нужное место
-with open('/home/ubuntu/kubespray/inventory/mycluster/hosts.yaml', 'w') as f:
+with open(hosts_yaml_path, 'w') as f:
     f.write(template.render(master_instances=master_instances, worker_instances=worker_instances))
