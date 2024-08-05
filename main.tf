@@ -6,7 +6,7 @@ resource "yandex_compute_instance" "k8s-master" {
   resources {
     cores         = 2
     memory        = 4
-    core_fraction = 5
+    core_fraction = 20
   }
   boot_disk {
     initialize_params {
@@ -36,7 +36,7 @@ resource "yandex_compute_instance" "k8s-worker" {
   resources {
     cores         = 2
     memory        = 4
-    core_fraction = 5
+    core_fraction = 20
   }
   boot_disk {
     initialize_params {
