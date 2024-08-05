@@ -102,12 +102,12 @@ jobs:
           RUNNER_IP=$(terraform output -json runner_external_ip | jq -r '.')
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 terraform_output.json ubuntu@$RUNNER_IP:/home/ubuntu/terraform_output.json
 
-      - name: Copy generate_hosts.sh to runner VM
+      - name: Copy generate_hosts.py to runner VM
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
           RUNNER_IP=$(terraform output -json runner_external_ip | jq -r '.')
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 generate_hosts.sh ubuntu@$RUNNER_IP:/home/ubuntu/generate_hosts.sh
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 generate_hosts.py ubuntu@$RUNNER_IP:/home/ubuntu/generate_hosts.py
 
       - name: Run tasks on runner VM
         env:
@@ -115,17 +115,16 @@ jobs:
         run: |
           RUNNER_IP=$(terraform output -json runner_external_ip | jq -r '.')
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$RUNNER_IP "
-            sudo apt-get update && sudo apt-get install -y git ansible python3-venv jq wget &&
-            wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq &&
-            chmod +x /usr/bin/yq &&
+            sudo apt-get update && sudo apt-get install -y git ansible python3-venv python3-pip &&
             python3 -m venv venv &&
             source venv/bin/activate &&
+            pip install jinja2 &&
             git clone https://github.com/kubernetes-sigs/kubespray.git /home/ubuntu/kubespray &&
             cd /home/ubuntu/kubespray &&
             pip install -r requirements.txt &&
             cp -rfp /home/ubuntu/kubespray/inventory/sample /home/ubuntu/kubespray/inventory/mycluster &&
-            chmod +x /home/ubuntu/generate_hosts.sh &&
-            /home/ubuntu/generate_hosts.sh &&
+            chmod +x /home/ubuntu/generate_hosts.py &&
+            python3 /home/ubuntu/generate_hosts.py &&
             cat /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml &&
             ansible-playbook -i /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml /home/ubuntu/kubespray/cluster.yml -b -vvvv
           "
