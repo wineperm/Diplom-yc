@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Загрузка данных из terraform_output.json
-terraform_output=$(cat terraform_output.json)
+terraform_output=$(cat /home/ubuntu/terraform_output.json)
 master_instances=$(echo $terraform_output | jq -r '.master_internal_ips.value[]')
 worker_instances=$(echo $terraform_output | jq -r '.worker_internal_ips.value[]')
 
