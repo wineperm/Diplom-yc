@@ -9,18 +9,18 @@ worker_instances=$(echo $terraform_output | jq -r '.worker_internal_ips.value[]'
 cat <<EOF > /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml
 all:
   hosts:
-$(for i in $(seq 0 $((${#master_instances[@]} - 1))); do echo "    k8s-master-$i:"; echo "      ansible_host: ${master_instances[$i]}"; echo "      ip: ${master_instances[$i]}"; echo "      access_ip: ${master_instances[$i]}"; echo "      ansible_user: sudo"; done)
-$(for i in $(seq 0 $((${#worker_instances[@]} - 1))); do echo "    k8s-worker-$i:"; echo "      ansible_host: ${worker_instances[$i]}"; echo "      ip: ${worker_instances[$i]}"; echo "      access_ip: ${worker_instances[$i]}"; echo "      ansible_user: sudo"; done)
+$(for i in $(seq 0 $((${#master_instances[@]} - 1))); do echo "    node$(($i + 1)):"; echo "      ansible_host: ${master_instances[$i]}"; echo "      ip: ${master_instances[$i]}"; echo "      access_ip: ${master_instances[$i]}"; echo "      ansible_user: sudo"; done)
+$(for i in $(seq 0 $((${#worker_instances[@]} - 1))); do echo "    node$(($i + 1 + ${#master_instances[@]})):"; echo "      ansible_host: ${worker_instances[$i]}"; echo "      ip: ${worker_instances[$i]}"; echo "      access_ip: ${worker_instances[$i]}"; echo "      ansible_user: sudo"; done)
   children:
     kube_control_plane:
       hosts:
-$(for i in $(seq 0 $((${#master_instances[@]} - 1))); do echo "        k8s-master-$i:"; done)
+$(for i in $(seq 0 $((${#master_instances[@]} - 1))); do echo "        node$(($i + 1)):"; done)
     kube_node:
       hosts:
-$(for i in $(seq 0 $((${#worker_instances[@]} - 1))); do echo "        k8s-worker-$i:"; done)
+$(for i in $(seq 0 $((${#worker_instances[@]} - 1))); do echo "        node$(($i + 1 + ${#master_instances[@]})):"; done)
     etcd:
       hosts:
-$(for i in $(seq 0 $((${#master_instances[@]} - 1))); do echo "        k8s-master-$i:"; done)
+$(for i in $(seq 0 $((${#master_instances[@]} - 1))); do echo "        node$(($i + 1)):"; done)
     k8s_cluster:
       children:
         kube_control_plane:
