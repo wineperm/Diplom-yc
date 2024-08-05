@@ -82,12 +82,22 @@ jobs:
             sleep 10
           done
 
-      - name: Copy generate_hosts.py to runner VM
+      - name: Copy SSH keys to runner VM
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
           RUNNER_IP=$(terraform output -json runner_external_ip | jq -r '.')
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 generate_hosts.py ubuntu@$RUNNER_IP:/home/ubuntu/generate_hosts.py
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ~/.ssh/id_ed25519 ubuntu@$RUNNER_IP:~/.ssh/id_ed25519
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ~/.ssh/id_ed25519.pub ubuntu@$RUNNER_IP:~/.ssh/id_ed25519.pub
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$RUNNER_IP "chmod 600 ~/.ssh/id_ed25519"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$RUNNER_IP "chmod 600 ~/.ssh/id_ed25519.pub"
+
+      - name: Copy generate_hosts.sh to runner VM
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          RUNNER_IP=$(terraform output -json runner_external_ip | jq -r '.')
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 generate_hosts.sh ubuntu@$RUNNER_IP:/home/ubuntu/generate_hosts.sh
 
       - name: Run tasks on runner VM
         env:
@@ -95,18 +105,16 @@ jobs:
         run: |
           RUNNER_IP=$(terraform output -json runner_external_ip | jq -r '.')
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$RUNNER_IP "
-            sudo apt-get update && sudo apt-get install -y git ansible python3-venv &&
+            sudo apt-get update && sudo apt-get install -y git ansible python3-venv jq &&
             python3 -m venv venv &&
             source venv/bin/activate &&
             git clone https://github.com/kubernetes-sigs/kubespray.git /home/ubuntu/kubespray &&
             cd /home/ubuntu/kubespray &&
             pip install -r requirements.txt &&
             cp -rfp /home/ubuntu/kubespray/inventory/sample /home/ubuntu/kubespray/inventory/mycluster &&
-            wget https://releases.hashicorp.com/terraform/1.9.0/terraform_1.9.0_linux_amd64.zip &&
-            unzip terraform_1.9.0_linux_amd64.zip &&
-            sudo mv terraform /usr/local/bin/ &&
             terraform output -json > terraform_output.json &&
-            python3 /home/ubuntu/generate_hosts.py &&
+            chmod +x /home/ubuntu/generate_hosts.sh &&
+            /home/ubuntu/generate_hosts.sh &&
             cat /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml &&
             ansible-playbook -i /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml /home/ubuntu/kubespray/cluster.yml -b -vvvv
           "
