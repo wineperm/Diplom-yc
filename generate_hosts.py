@@ -1,9 +1,8 @@
-import os
 import json
 from jinja2 import Template
 
 # Загрузка данных из terraform_output.json
-with open('terraform_output.json') as f:
+with open('/home/ubuntu/terraform_output.json') as f:
     data = json.load(f)
 
 # Отладочный вывод для проверки структуры JSON-данных
@@ -21,14 +20,14 @@ all:
       ansible_host: {{ host }}
       ip: {{ host }}
       access_ip: {{ host }}
-      ansible_user: sudo
+      ansible_user: ubuntu
 {% endfor %}
 {% for host in worker_instances %}
     k8s-worker-{{ loop.index0 }}:
       ansible_host: {{ host }}
       ip: {{ host }}
       access_ip: {{ host }}
-      ansible_user: sudo
+      ansible_user: ubuntu
 {% endfor %}
   children:
     kube_control_plane:
@@ -54,12 +53,6 @@ all:
       hosts: {}
 ''')
 
-# Путь к файлу hosts.yaml
-hosts_yaml_path = '/home/ubuntu/kubespray/inventory/mycluster/hosts.yaml'
-
-# Создание директории, если она не существует
-os.makedirs(os.path.dirname(hosts_yaml_path), exist_ok=True)
-
 # Запись сгенерированного файла hosts.yaml в нужное место
-with open(hosts_yaml_path, 'w') as f:
+with open('/home/ubuntu/kubespray/inventory/mycluster/hosts.yaml', 'w') as f:
     f.write(template.render(master_instances=master_instances, worker_instances=worker_instances))
