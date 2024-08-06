@@ -10,7 +10,7 @@ terraform {
     endpoints = {
       s3 = "https://storage.yandexcloud.net"
     }
-    bucket = "wineperm-tfstate"
+    bucket = "wineperm-tfstate-bucket"
     region = "ru-central1"
     key    = "terraform.tfstate"
 
