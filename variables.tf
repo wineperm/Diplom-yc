@@ -30,8 +30,8 @@ variable "service_account_key_file_path" {
   type        = string
 }
 
-variable "yc_service_account_id" {
-  description = "Идентификатор существующего сервисного аккаунта"
+variable "yc_bucket_account_id" {
+  description = "Идентификатор существующего сервисного аккаунта для бакета"
   type        = string
 }
 
