@@ -28,19 +28,7 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519.pub
           echo "$SERVICE_ACCOUNT_KEY_FILE" > ~/.ssh/authorized_key.json
           chmod 600 ~/.ssh/authorized_key.json
-
-      - name: Set up AWS credentials
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.YC_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.YC_SECRET_ACCESS_KEY }}
-        run: |
-          mkdir -p ~/.aws
-          cat <<EOL > ~/.aws/credentials
-          [default]
-          aws_access_key_id = $AWS_ACCESS_KEY_ID
-          aws_secret_access_key = $AWS_SECRET_ACCESS_KEY
-          EOL
-
+      
       - name: Initialize Terraform
         env:
           TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
@@ -49,8 +37,6 @@ jobs:
           TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
           TF_VAR_service_account_key_file_path: ~/.ssh/authorized_key.json
           TF_VAR_ssh_private_key_path: ~/.ssh/id_ed25519
-          AWS_ACCESS_KEY_ID: ${{ secrets.YC_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.YC_SECRET_ACCESS_KEY }}
         run: terraform init
 
       - name: Apply Terraform
@@ -61,8 +47,6 @@ jobs:
           TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
           TF_VAR_service_account_key_file_path: ~/.ssh/authorized_key.json
           TF_VAR_ssh_private_key_path: ~/.ssh/id_ed25519
-          AWS_ACCESS_KEY_ID: ${{ secrets.YC_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.YC_SECRET_ACCESS_KEY }}
         run: terraform apply -auto-approve
 
       - name: Generate terraform_output.json
@@ -84,7 +68,7 @@ jobs:
               sleep 10
             done
           done
-
+      
       - name: Wait for runner VM to be available
         run: |
           RUNNER_IP=$(terraform output -json runner_external_ip | jq -r '.')
@@ -100,7 +84,7 @@ jobs:
             echo "Waiting for SSH to be available on $RUNNER_IP..."
             sleep 10
           done
-
+      
       - name: Copy SSH keys to runner VM
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -110,21 +94,21 @@ jobs:
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ~/.ssh/id_ed25519.pub ubuntu@$RUNNER_IP:~/.ssh/id_ed25519.pub
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$RUNNER_IP "chmod 600 ~/.ssh/id_ed25519"
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$RUNNER_IP "chmod 600 ~/.ssh/id_ed25519.pub"
-
+      
       - name: Copy terraform_output.json to runner VM
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
           RUNNER_IP=$(terraform output -json runner_external_ip | jq -r '.')
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 terraform_output.json ubuntu@$RUNNER_IP:/home/ubuntu/terraform_output.json
-
+     
       - name: Copy generate_hosts.py to runner VM
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
           RUNNER_IP=$(terraform output -json runner_external_ip | jq -r '.')
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 generate_hosts.py ubuntu@$RUNNER_IP:/home/ubuntu/generate_hosts.py
-
+      
       - name: Run tasks on runner VM
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -142,7 +126,7 @@ jobs:
             cat /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml &&
             ansible-playbook -i /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml /home/ubuntu/kubespray/cluster.yml -b -v
           "
-
+     
       - name: Wait for 1 minute
         run: sleep 60
 
@@ -155,6 +139,4 @@ jobs:
           TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
           TF_VAR_service_account_key_file_path: ~/.ssh/authorized_key.json
           TF_VAR_ssh_private_key_path: ~/.ssh/id_ed25519
-          AWS_ACCESS_KEY_ID: ${{ secrets.YC_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.YC_SECRET_ACCESS_KEY }}
         run: terraform destroy -auto-approve
