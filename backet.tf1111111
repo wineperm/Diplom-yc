@@ -1,6 +1,6 @@
 resource "yandex_iam_service_account" "sa" {
   folder_id = var.yc_folder_id
-  name      = "tf-storage-sa"
+  name      = "wineperm-s3-backet-dip-yc"
 }
 
 resource "yandex_resourcemanager_folder_iam_member" "sa-editor" {
