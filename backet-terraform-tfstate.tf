@@ -1,6 +1,6 @@
 # Используйте существующий сервисный аккаунт
 data "yandex_iam_service_account" "sa" {
-  service_account_id = var.yc_service_account_id
+  service_account_id = var.yc_bucket_account_id
 }
 
 resource "yandex_resourcemanager_folder_iam_member" "sa-editor" {
