@@ -34,7 +34,7 @@ jobs:
           TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
           TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
           TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
-          TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+          TF_VAR_yc_bucket_account_id: ${{ secrets.YC_BACKET_ACCOUNT_ID }}
           TF_VAR_service_account_key_file_path: ~/.ssh/authorized_key.json
           TF_VAR_ssh_private_key_path: ~/.ssh/id_ed25519
           AWS_ACCESS_KEY_ID: ${{ secrets.YC_ACCESS_KEY_ID }}
@@ -46,7 +46,7 @@ jobs:
           TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
           TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
           TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
-          TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+          TF_VAR_yc_bucket_account_id: ${{ secrets.YC_BACKET_ACCOUNT_ID }}
           TF_VAR_service_account_key_file_path: ~/.ssh/authorized_key.json
           TF_VAR_ssh_private_key_path: ~/.ssh/id_ed25519
           AWS_ACCESS_KEY_ID: ${{ secrets.YC_ACCESS_KEY_ID }}
@@ -140,7 +140,7 @@ jobs:
           TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
           TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
           TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
-          TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+          TF_VAR_yc_bucket_account_id: ${{ secrets.YC_BACKET_ACCOUNT_ID }}
           TF_VAR_service_account_key_file_path: ~/.ssh/authorized_key.json
           TF_VAR_ssh_private_key_path: ~/.ssh/id_ed25519
           AWS_ACCESS_KEY_ID: ${{ secrets.YC_ACCESS_KEY_ID }}
