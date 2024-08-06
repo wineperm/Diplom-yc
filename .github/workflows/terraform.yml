@@ -124,7 +124,7 @@ jobs:
             cp -rfp /home/ubuntu/kubespray/inventory/sample /home/ubuntu/kubespray/inventory/mycluster &&
             python3 /home/ubuntu/generate_hosts.py &&
             cat /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml &&
-            ansible-playbook -i /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml /home/ubuntu/kubespray/cluster.yml -b -v
+            ansible-playbook -i /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml /home/ubuntu/kubespray/cluster.yml -b -vvvv
           "
 
       - name: Wait for 1 minute
