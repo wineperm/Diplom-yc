@@ -29,3 +29,9 @@ variable "service_account_key_file_path" {
   description = "Path to the service account key file"
   type        = string
 }
+
+variable "yc_service_account_id" {
+  description = "Идентификатор существующего сервисного аккаунта"
+  type        = string
+}
+
