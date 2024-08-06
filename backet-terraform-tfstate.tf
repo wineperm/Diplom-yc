@@ -1,5 +1,10 @@
 # Используйте существующий сервисный аккаунт
 data "yandex_iam_service_account" "sa" {
+  service_account_id = var.yc_service_account_id
+}
+
+# Используйте существующий сервисный аккаунт для бакета
+data "yandex_iam_service_account" "bucket_sa" {
   service_account_id = var.yc_bucket_account_id
 }
 
