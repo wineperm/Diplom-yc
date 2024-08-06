@@ -14,8 +14,8 @@ terraform {
     region = "ru-central1"
     key    = "terraform.tfstate"
 
-    access_key = var.yc_access_key_id
-    secret_key = var.yc_secret_access_key
+    access_key = aws_access_key_id
+    secret_key = aws_secret_access_key
 
     skip_region_validation      = true
     skip_credentials_validation = true
