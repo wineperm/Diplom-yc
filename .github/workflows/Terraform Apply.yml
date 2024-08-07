@@ -135,6 +135,17 @@ jobs:
             ansible-playbook -i /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml /home/ubuntu/kubespray/cluster.yml -b -v
           "
 
+      - name: Execute commands on master node
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          MASTER_IP=$(terraform output -json master_external_ips | jq -r '.[0]')
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "
+            mkdir ~/.kube &&
+            sudo cp /etc/kubernetes/admin.conf ~/.kube/config &&
+            sudo chown $(id -u):$(id -g) ~/.kube/config
+          "
+
       - name: Wait for 1 minute
         run: sleep 60
 
