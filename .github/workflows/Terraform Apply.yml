@@ -146,20 +146,32 @@ jobs:
             sudo chown ubuntu:ubuntu ~/.kube/config
           "
 
-      # - name: Clone and apply kube-prometheus manifests on master node
-      #   env:
-      #     SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-      #   run: |
-      #     MASTER_IP=$(terraform output -json master_external_ips | jq -r '.[0]')
-      #     ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "
-      #       git clone git@github.com:prometheus-operator/kube-prometheus.git &&
-      #       cd kube-prometheus/ &&
-      #       kubectl apply --server-side -f manifests/setup &&
-      #       kubectl wait \
-      #         --for condition=Established \
-      #         --all CustomResourceDefinition &&
-      #       kubectl apply -f manifests/
-      #     "
+      - name: Clone and apply kube-prometheus manifests on master node
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          MASTER_IP=$(terraform output -json master_external_ips | jq -r '.[0]')
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "
+            git clone git@github.com:prometheus-operator/kube-prometheus.git &&
+            cd kube-prometheus/ &&
+            kubectl apply --server-side -f manifests/setup &&
+            kubectl wait \
+              --for condition=Established \
+              --all CustomResourceDefinition &&
+            kubectl apply -f manifests/ &&
+            # kubectl wait \
+            #   --for condition=Available \
+            #   --all Deployment &&
+            # kubectl wait \
+            #   --for condition=Available \
+            #   --all StatefulSet &&
+            # kubectl wait \
+            #   --for condition=Available \
+            #   --all DaemonSet &&
+            kubectl --namespace monitoring port-forward svc/grafana 3000 &
+            kubectl --namespace monitoring port-forward svc/prometheus-k8s 9090 &
+            kubectl --namespace monitoring port-forward svc/alertmanager-main 9093 &
+          "
 
       - name: Wait for 1 minute
         run: sleep 60
