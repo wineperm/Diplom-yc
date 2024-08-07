@@ -5,6 +5,7 @@ terraform {
     }
   }
   required_version = ">= 0.13"
+}
 
 provider "yandex" {
   cloud_id                 = var.yc_cloud_id
