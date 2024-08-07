@@ -139,6 +139,7 @@ jobs:
         run: sleep 60
 
       - name: Destroy runner VM
+        if: success()
         env:
           TF_CLOUD_TOKEN: ${{ secrets.TF_CLOUD_TOKEN }}
           TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
@@ -148,3 +149,15 @@ jobs:
           TF_VAR_service_account_key_file_path: ~/.ssh/authorized_key.json
           TF_VAR_ssh_private_key_path: ~/.ssh/id_ed25519
         run: terraform destroy -auto-approve -target=yandex_compute_instance.runner
+
+      - name: Destroy Terraform Infrastructure on failure
+        if: failure()
+        env:
+          TF_CLOUD_TOKEN: ${{ secrets.TF_CLOUD_TOKEN }}
+          TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+          TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+          TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+          TF_VAR_service_account_key_file_path: ~/.ssh/authorized_key.json
+          TF_VAR_ssh_private_key_path: ~/.ssh/id_ed25519
+        run: terraform destroy -auto-approve
