@@ -162,19 +162,7 @@ jobs:
             kubectl wait \
               --for condition=Established \
               --all CustomResourceDefinition &&
-            kubectl apply -f manifests/ &&
-          #   kubectl wait \
-          #     --for condition=Available \
-          #     --all Deployment &&
-          #   kubectl wait \
-          #     --for condition=Available \
-          #     --all StatefulSet &&
-          #   kubectl wait \
-          #     --for condition=Available \
-          #     --all DaemonSet &&
-          #   kubectl --namespace monitoring port-forward svc/grafana 3000 &
-          #   kubectl --namespace monitoring port-forward svc/prometheus-k8s 9090 &
-          #   kubectl --namespace monitoring port-forward svc/alertmanager-main 9093 &
+            kubectl apply -f manifests/
           "
 
       - name: Wait for 1 minute
