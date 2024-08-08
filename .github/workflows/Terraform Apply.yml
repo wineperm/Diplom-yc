@@ -143,7 +143,9 @@ jobs:
         run: |
           MASTER_IP=$(terraform output -json master_external_ips | jq -r '.[0]')
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "
-            mkdir ~/.kube &&
+            if [ ! -d ~/.kube ]; then
+              mkdir ~/.kube
+            fi
             sudo cp /etc/kubernetes/admin.conf ~/.kube/config &&
             sudo chown ubuntu:ubuntu ~/.kube/config
           "
