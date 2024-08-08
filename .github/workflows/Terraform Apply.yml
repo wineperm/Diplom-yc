@@ -152,7 +152,7 @@ jobs:
         run: |
           MASTER_IP=$(terraform output -json master_external_ips | jq -r '.[0]')
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "
-            git clone git@github.com:prometheus-operator/kube-prometheus.git &&
+            git clone https://github.com/prometheus-operator/kube-prometheus.git &&
             cd kube-prometheus/ &&
             kubectl apply --server-side -f manifests/setup &&
             kubectl wait \
