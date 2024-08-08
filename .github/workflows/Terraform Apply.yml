@@ -131,6 +131,8 @@ jobs:
             pip install -r requirements.txt &&
             cp -rfp /home/ubuntu/kubespray/inventory/sample /home/ubuntu/kubespray/inventory/mycluster &&
             python3 /home/ubuntu/generate_hosts.py &&
+            MASTER_IP=$(terraform output -json master_external_ips | jq -r '.[0]') &&
+            echo 'supplementary_addresses_in_ssl_keys: ['$MASTER_IP']' >> /home/ubuntu/kubespray/inventory/mycluster/group_vars/k8s_cluster/k8s-cluster.yml &&
             cat /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml &&
             ansible-playbook -i /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml /home/ubuntu/kubespray/cluster.yml -b -v
           "
@@ -159,19 +161,19 @@ jobs:
               --for condition=Established \
               --all CustomResourceDefinition &&
             kubectl apply -f manifests/ &&
-            # kubectl wait \
-            #   --for condition=Available \
-            #   --all Deployment &&
-            # kubectl wait \
-            #   --for condition=Available \
-            #   --all StatefulSet &&
-            # kubectl wait \
-            #   --for condition=Available \
-            #   --all DaemonSet &&
-            kubectl --namespace monitoring port-forward svc/grafana 3000 &
-            kubectl --namespace monitoring port-forward svc/prometheus-k8s 9090 &
-            kubectl --namespace monitoring port-forward svc/alertmanager-main 9093 &
-          "
+          #   kubectl wait \
+          #     --for condition=Available \
+          #     --all Deployment &&
+          #   kubectl wait \
+          #     --for condition=Available \
+          #     --all StatefulSet &&
+          #   kubectl wait \
+          #     --for condition=Available \
+          #     --all DaemonSet &&
+          #   kubectl --namespace monitoring port-forward svc/grafana 3000 &
+          #   kubectl --namespace monitoring port-forward svc/prometheus-k8s 9090 &
+          #   kubectl --namespace monitoring port-forward svc/alertmanager-main 9093 &
+          # "
 
       - name: Wait for 1 minute
         run: sleep 60
