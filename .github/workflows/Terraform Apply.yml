@@ -131,9 +131,10 @@ jobs:
             pip install -r requirements.txt &&
             cp -rfp /home/ubuntu/kubespray/inventory/sample /home/ubuntu/kubespray/inventory/mycluster &&
             python3 /home/ubuntu/generate_hosts.py &&
-            MASTER_IP=$(terraform output -json master_external_ips | jq -r '.[0]') &&
-            sed -i 's/# supplementary_addresses_in_ssl_keys: \[10.0.0.1, 10.0.0.2, 10.0.0.3\]/\supplementary_addresses_in_ssl_keys: ['$MASTER_IP']/' /home/ubuntu/kubespray/inventory/mycluster/group_vars/k8s_cluster/k8s-cluster.yml &&
-            grep 'supplementary_addresses_in_ssl_keys' /home/ubuntu/kubespray/inventory/mycluster/group_vars/k8s_cluster/k8s-cluster.yml &&
+            ADDONS_FILE=/home/ubuntu/kubespray/inventory/mycluster/group_vars/k8s_cluster/addons.yml &&
+            sed -i 's/helm_enabled: false/helm_enabled: true/' $ADDONS_FILE &&
+            sed -i 's/ingress_nginx_enabled: false/ingress_nginx_enabled: true/' $ADDONS_FILE &&
+            sed -i 's/# ingress_nginx_host_network: false/ingress_nginx_host_network: true/' $ADDONS_FILE &&
             cat /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml &&
             ansible-playbook -i /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml /home/ubuntu/kubespray/cluster.yml -b -v
           "
