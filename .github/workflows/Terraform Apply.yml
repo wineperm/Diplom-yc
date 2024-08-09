@@ -122,6 +122,7 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
           RUNNER_IP=$(terraform output -json runner_external_ip | jq -r '.')
+          MASTER_EXTERNAL_IP=$(terraform output -json master_external_ips | jq -r '.[0]')
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$RUNNER_IP "
             sudo apt-get update && sudo apt-get install -y git python3-venv python3-pip &&
             python3 -m venv venv &&
@@ -136,6 +137,10 @@ jobs:
               sed -i 's/helm_enabled: false/helm_enabled: true/' $ADDONS_FILE &&
               sed -i 's/ingress_nginx_enabled: false/ingress_nginx_enabled: true/' $ADDONS_FILE &&
               sed -i 's/# ingress_nginx_host_network: false/ingress_nginx_host_network: true/' $ADDONS_FILE
+            fi &&
+            CLUSTER_FILE=/home/ubuntu/kubespray/inventory/mycluster/group_vars/k8s_cluster/k8s-cluster.yml &&
+            if [ -f $CLUSTER_FILE ]; then
+              echo 'supplementary_addresses_in_ssl_keys: ["'$MASTER_EXTERNAL_IP'"]' >> $CLUSTER_FILE
             fi &&
             cat /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml &&
             ansible-playbook -i /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml /home/ubuntu/kubespray/cluster.yml -b -v
