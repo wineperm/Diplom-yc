@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: application
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-nginx-app
+  namespace: application
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-nginx-app
+  template:
+    metadata:
+      namespace: application
+      labels:
+        app: my-nginx-app
+    spec:
+      containers:
+      - name: my-nginx-app
+        image: wineperm/my-nginx-app:v1.0.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-nginx-app-service
+  namespace: application
+spec:
+  selector:
+    app: my-nginx-app
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      nodePort: 32000
+  type: NodePort
