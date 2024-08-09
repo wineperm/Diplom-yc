@@ -132,9 +132,11 @@ jobs:
             cp -rfp /home/ubuntu/kubespray/inventory/sample /home/ubuntu/kubespray/inventory/mycluster &&
             python3 /home/ubuntu/generate_hosts.py &&
             ADDONS_FILE=/home/ubuntu/kubespray/inventory/mycluster/group_vars/k8s_cluster/addons.yml &&
-            sed -i 's/helm_enabled: false/helm_enabled: true/' $ADDONS_FILE &&
-            sed -i 's/ingress_nginx_enabled: false/ingress_nginx_enabled: true/' $ADDONS_FILE &&
-            sed -i 's/# ingress_nginx_host_network: false/ingress_nginx_host_network: true/' $ADDONS_FILE &&
+            if [ -f $ADDONS_FILE ]; then
+              sed -i 's/helm_enabled: false/helm_enabled: true/' $ADDONS_FILE &&
+              sed -i 's/ingress_nginx_enabled: false/ingress_nginx_enabled: true/' $ADDONS_FILE &&
+              sed -i 's/# ingress_nginx_host_network: false/ingress_nginx_host_network: true/' $ADDONS_FILE
+            fi &&
             cat /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml &&
             ansible-playbook -i /home/ubuntu/kubespray/inventory/mycluster/hosts.yaml /home/ubuntu/kubespray/cluster.yml -b -v
           "
