@@ -166,6 +166,20 @@ jobs:
             kubectl apply -f manifests/
           "
 
+      - name: Clone and apply Nginx-diplom manifests on master node
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          MASTER_IP=$(terraform output -json master_external_ips | jq -r '.[0]')
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "
+            if [ -d /home/ubuntu/Nginx-diplom ]; then
+              rm -rf /home/ubuntu/Nginx-diplom
+            fi
+            git clone https://github.com/wineperm/Nginx-diplom.git /home/ubuntu/Nginx-diplom &&
+            cd /home/ubuntu/Nginx-diplom &&
+            kubectl apply -f app.yaml
+          "
+
       - name: Wait for 1 minute
         run: sleep 60
 
