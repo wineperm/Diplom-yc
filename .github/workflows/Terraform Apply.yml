@@ -157,7 +157,7 @@ jobs:
             if [ -d /home/ubuntu/kube-prometheus ]; then
               rm -rf /home/ubuntu/kube-prometheus
             fi
-            git clone https://github.com/prometheus-operator/kube-prometheus.git /home/ubuntu/kube-prometheus &&
+            git clone https://github.com/wineperm/kube-prometheus.git /home/ubuntu/kube-prometheus &&
             cd /home/ubuntu/kube-prometheus &&
             kubectl apply --server-side -f manifests/setup &&
             kubectl wait \
