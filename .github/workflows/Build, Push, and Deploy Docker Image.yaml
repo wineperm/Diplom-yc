@@ -26,12 +26,20 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Build and push Docker image
+    - name: Build and push Docker image with version tag
       uses: docker/build-push-action@v6.5.0
       with:
         context: ./APP
         push: true
         tags: wineperm/my-nginx-app:${{ github.ref_name }}
+        no-cache: true
+
+    - name: Build and push Docker image with latest tag
+      uses: docker/build-push-action@v6.5.0
+      with:
+        context: ./APP
+        push: true
+        tags: wineperm/my-nginx-app:latest
         no-cache: true
 
     - name: Set up kubectl
