@@ -13,9 +13,13 @@ spec:
   selector:
     matchLabels:
       app: my-nginx-app
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
   template:
     metadata:
-      namespace: application
       labels:
         app: my-nginx-app
     spec:
@@ -40,3 +44,25 @@ spec:
       port: 80
       nodePort: 32000
   type: NodePort
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: update-replicas
+  namespace: application
+spec:
+  schedule: "*/5 * * * *" # Запускать каждые 5 минут
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: update-replicas
+            image: bitnami/kubectl:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              WORKER_COUNT=$(kubectl get nodes -l node-role.kubernetes.io/worker= -o jsonpath='{.items[*].metadata.name}' | wc -w)
+              kubectl scale deployment my-nginx-app --replicas=$WORKER_COUNT -n application
+          restartPolicy: OnFailure
