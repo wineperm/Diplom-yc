@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: application
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-nginx-app
+  namespace: application
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-nginx-app
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: my-nginx-app
+    spec:
+      containers:
+      - name: my-nginx-app
+        image: wineperm/my-nginx-app:v1.0.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-nginx-app-service
+  namespace: application
+spec:
+  selector:
+    app: my-nginx-app
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      nodePort: 32000
+  type: NodePort
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: update-replicas
+  namespace: application
+spec:
+  schedule: "*/5 * * * *" # Запускать каждые 5 минут
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: update-replicas
+            image: bitnami/kubectl:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              WORKER_COUNT=$(kubectl get nodes -l node-role.kubernetes.io/worker= -o jsonpath='{.items[*].metadata.name}' | wc -w)
+              kubectl scale deployment my-nginx-app --replicas=$WORKER_COUNT -n application
+          restartPolicy: OnFailure
