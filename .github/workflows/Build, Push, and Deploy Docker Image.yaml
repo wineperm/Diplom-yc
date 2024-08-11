@@ -37,12 +37,136 @@ jobs:
     - name: Set up kubectl
       uses: azure/setup-kubectl@v4.0.0
 
-    - name: Configure kubectl
-      run: |
-        mkdir -p $HOME/.kube
-        echo "${{ secrets.KUBECONFIG }}" > $HOME/.kube/config
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.1.7
 
-    - name: Deploy to Kubernetes
-      run: |
-        kubectl set image deployment/my-nginx-app my-nginx-app=wineperm/my-nginx-app:${{ github.ref_name }}
-        kubectl rollout status deployment/my-nginx-app
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3.1.1
+        with:
+          terraform_version: v1.9.0
+
+      - name: Set up SSH keys
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
+          SERVICE_ACCOUNT_KEY_FILE: ${{ secrets.SERVICE_ACCOUNT_KEY_FILE }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "$SSH_PUBLIC_KEY" > ~/.ssh/id_ed25519.pub
+          chmod 600 ~/.ssh/id_ed25519.pub
+          echo "$SERVICE_ACCOUNT_KEY_FILE" > ~/.ssh/authorized_key.json
+          chmod 600 ~/.ssh/authorized_key.json
+
+      - name: Set up Terraform CLI configuration
+        env:
+          TF_CLOUD_TOKEN: ${{ secrets.TF_CLOUD_TOKEN }}
+        run: |
+          echo "credentials \"app.terraform.io\" {
+            token = \"$TF_CLOUD_TOKEN\"
+          }" > ~/.terraformrc
+
+      - name: Initialize Terraform
+        env:
+          TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+          TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+          TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+          TF_VAR_service_account_key_file_path: ~/.ssh/authorized_key.json
+          TF_VAR_ssh_private_key_path: ~/.ssh/id_ed25519
+        run: terraform init
+
+      - name: Apply Terraform
+        env:
+          TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+          TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+          TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+          TF_VAR_service_account_key_file_path: ~/.ssh/authorized_key.json
+          TF_VAR_ssh_private_key_path: ~/.ssh/id_ed25519
+        run: terraform apply -auto-approve -target=yandex_compute_instance.runner
+
+      - name: Generate terraform_output.json
+        run: terraform output -json > terraform_output.json
+
+      - name: Wait for SSH to be available
+        run: |
+          for host in $(terraform output -json master_external_ips | jq -r '.[]'); do
+            start_time=$(date +%s)
+            timeout=180
+            while ! ssh -o BatchMode=yes -o StrictHostKeyChecking=no ubuntu@$host "echo SSH connection successful"; do
+              current_time=$(date +%s)
+              elapsed_time=$((current_time - start_time))
+              if [ $elapsed_time -ge $timeout ]; then
+                echo "Timeout waiting for SSH to be available on $host"
+                exit 1
+              fi
+              echo "Waiting for SSH to be available on $host..."
+              sleep 10
+            done
+          done
+
+      - name: Wait for runner VM to be available
+        run: |
+          RUNNER_IP=$(terraform output -json runner_external_ip | jq -r '.')
+          start_time=$(date +%s)
+          timeout=180
+          while ! ssh -o BatchMode=yes -o StrictHostKeyChecking=no ubuntu@$RUNNER_IP "echo SSH connection successful"; do
+            current_time=$(date +%s)
+            elapsed_time=$((current_time - start_time))
+            if [ $elapsed_time -ge $timeout ]; then
+              echo "Timeout waiting for SSH to be available on $RUNNER_IP"
+              exit 1
+            fi
+            echo "Waiting for SSH to be available on $RUNNER_IP..."
+            sleep 10
+          done
+
+      - name: Copy SSH keys to runner VM
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          RUNNER_IP=$(terraform output -json runner_external_ip | jq -r '.')
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ~/.ssh/id_ed25519 ubuntu@$RUNNER_IP:~/.ssh/id_ed25519
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ~/.ssh/id_ed25519.pub ubuntu@$RUNNER_IP:~/.ssh/id_ed25519.pub
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$RUNNER_IP "chmod 600 ~/.ssh/id_ed25519"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$RUNNER_IP "chmod 600 ~/.ssh/id_ed25519.pub"
+
+      - name: Copy app.yaml to runner VM
+        run: |
+          RUNNER_IP=$(terraform output -json runner_external_ip | jq -r '.')
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 APP/app.yaml ubuntu@$RUNNER_IP:~/app.yaml
+
+      - name: Connect runner to master and deploy Docker image
+        run: |
+          MASTER_IP=$(terraform output -json master_external_ips | jq -r '.[0]')
+          RUNNER_IP=$(terraform output -json runner_external_ip | jq -r '.')
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$RUNNER_IP "ssh -o StrictHostKeyChecking=no ubuntu@$MASTER_IP 'kubectl apply -f ~/app.yaml'"
+
+      - name: Destroy runner VM
+        if: success()
+        env:
+          TF_CLOUD_TOKEN: ${{ secrets.TF_CLOUD_TOKEN }}
+          TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+          TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+          TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+          TF_VAR_service_account_key_file_path: ~/.ssh/authorized_key.json
+          TF_VAR_ssh_private_key_path: ~/.ssh/id_ed25519
+        run: terraform destroy -auto-approve -target=yandex_compute_instance.runner
+
+      - name: Destroy Terraform Infrastructure on failure
+        if: failure()
+        env:
+          TF_CLOUD_TOKEN: ${{ secrets.TF_CLOUD_TOKEN }}
+          TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+          TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+          TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+          TF_VAR_service_account_key_file_path: ~/.ssh/authorized_key.json
+          TF_VAR_ssh_private_key_path: ~/.ssh/id_ed25519
+        run: terraform destroy -auto-approve -target=yandex_compute_instance.runner
