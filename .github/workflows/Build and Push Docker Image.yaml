@@ -5,11 +5,11 @@ on:
   workflow_dispatch:
 
   # Запуск по коммиту (кроме создания тега)
-  # push:
-  #   branches:
-  #     - '*'
-  #   tags-ignore:
-  #     - 'v*.*.*'
+  push:
+    branches:
+      - '*'
+    tags-ignore:
+      - 'v*.*.*'
 
 jobs:
   build:
