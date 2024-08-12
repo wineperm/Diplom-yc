@@ -183,6 +183,11 @@ jobs:
           RUNNER_IP=$(terraform output -json runner_external_ip | jq -r '.')
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$RUNNER_IP "ssh -o StrictHostKeyChecking=no ubuntu@$MASTER_IP 'kubectl apply -f ~/app.yaml'"
 
+      - name: Update Terraform configuration to close external network for workers
+        run: |
+          chmod +x update_terraform_config.sh
+          ./update_terraform_config.sh
+
       - name: Output IP addresses of hosts
         run: |
           echo "Master IPs:"
