@@ -195,8 +195,8 @@ jobs:
           echo "Runner IP:"
           terraform output -json runner_external_ip | jq -r '.'
 
-      - name: Wait for 1 minute
-        run: sleep 60
+      # - name: Wait for 1 minute
+      #   run: sleep 60
 
       - name: Destroy runner VM
         if: success()
