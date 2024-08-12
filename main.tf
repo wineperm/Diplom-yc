@@ -49,7 +49,7 @@ resource "yandex_compute_instance" "k8s-worker" {
   network_interface {
     subnet_id = element([yandex_vpc_subnet.k8s-subnet-a.id, yandex_vpc_subnet.k8s-subnet-b.id, yandex_vpc_subnet.k8s-subnet-d.id], count.index % 3)
     ip_address = cidrhost(element(["10.1.1.0/24", "10.1.2.0/24", "10.1.3.0/24"], count.index % 3), count.index + 20)
-    nat       = false # false # true
+    nat       = true # false # true
   }
   scheduling_policy {
     preemptible = true
