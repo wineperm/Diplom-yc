@@ -8,7 +8,7 @@ on:
 
 jobs:
   terraform:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     if: github.event.head_commit.message == 'apply'
     steps:
       - name: Checkout code
