@@ -2,10 +2,14 @@ name: Terraform Apply
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
   terraform:
     runs-on: ubuntu-latest
+    if: github.event.head_commit.message == 'apply'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.1.7
