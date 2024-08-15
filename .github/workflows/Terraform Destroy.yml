@@ -8,7 +8,7 @@ on:
 
 jobs:
   terraform:
-    runs-on: self-hosted
+    runs-on: [self-hosted, Windows, x64]
     if: github.event.head_commit.message == 'destroy'
     steps:
       - name: Checkout code
