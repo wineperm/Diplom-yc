@@ -9,7 +9,9 @@ on:
 jobs:
   terraform:
     runs-on: self-hosted
-    if: github.event.head_commit.message == 'apply'
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && contains(github.event.head_commit.message, 'apply'))
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.1.7
