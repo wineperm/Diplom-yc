@@ -110,7 +110,7 @@
 
 ## Ответ
 
-Выбран способ установки кластера K8s с помощью Kubespray. Герерируется динамический hosts.yaml файл с помощью шаблона и скрипта. Количество машин и их конфигурацию можно выбрать в файлах настройки Terraform [main.tf](https://github.com/wineperm/Diplom-yc/blob/main/main.tf). Для установки в кластер Kubespray используется отдельная машина [runner.tf](https://github.com/wineperm/Diplom-yc/blob/main/runner.tf), которая после выполнения поставленных задач выключается. 
+Выбран способ установки кластера K8s с помощью Kubespray. Генерируется динамический hosts.yaml файл с помощью шаблона и скрипта. Количество машин и их конфигурацию можно выбрать в файлах настройки Terraform [main.tf](https://github.com/wineperm/Diplom-yc/blob/main/main.tf). Для установки в кластер Kubespray используется отдельная машина [runner.tf](https://github.com/wineperm/Diplom-yc/blob/main/runner.tf), которая после выполнения поставленных задач выключается. 
 
 - [Kubespray](https://github.com/wineperm/kubespray)
 - [generate_hosts.py](https://github.com/wineperm/Diplom-yc/blob/main/generate_hosts.py)
