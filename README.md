@@ -63,10 +63,10 @@
 
 При нажатии кнопки "run workflow" для [Terraform Destroy.yml] или при коммите со словом "destroy" происходит полное удаление всех ресурсов, созданных ранее на Yandex Cloud в рамках этого проекта.
 
-[Terraform Apply.yml]
-[Build and Push Docker Image.yaml]
-[Build, Push, and Deploy Docker Image.yaml]
-[Terraform Destroy.yml]
+[Terraform Apply.yml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Terraform%20Apply.yml)
+[Build and Push Docker Image.yaml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Build%20and%20Push%20Docker%20Image.yaml)
+[Build, Push, and Deploy Docker Image.yaml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Build%2C%20Push%2C%20and%20Deploy%20Docker%20Image.yaml)
+[Terraform Destroy.yml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Terraform%20Destroy.yml)
 
 ---
 
@@ -74,17 +74,17 @@
 
 Инфраструктура создана с помощью Terraform, backend сделан в Terraform Cloud. Оркестрацию поднятия инфраструктуры с кнопки осуществляет GitHub Actions или при отправке коммита "apply", используя workflows. Машины распределяются в зависимости от заданного количества по разным зонам доступности.
 
-[main.tf]
-[providers.tf]
-[runner.tf]
-[vpc.tf]
-[variables.tf]
-[outputs.tf]
-[backend.tf]
+[main.tf](https://github.com/wineperm/Diplom-yc/blob/main/main.tf)
+[runner.tf](https://github.com/wineperm/Diplom-yc/blob/main/runner.tf)
+[vpc.tf](https://github.com/wineperm/Diplom-yc/blob/main/vpc.tf)
+[providers.tf](https://github.com/wineperm/Diplom-yc/blob/main/providers.tf)
+[variables.tf](https://github.com/wineperm/Diplom-yc/blob/main/variables.tf)
+[outputs.tf](https://github.com/wineperm/Diplom-yc/blob/main/outputs.tf)
+[backend.tf](https://github.com/wineperm/Diplom-yc/blob/main/backend.tf)
 
-![Alt text]1
-![Alt text]1-1
-![Alt text]1-2
+![Alt text](https://github.com/user-attachments/assets/db759888-bcb3-4171-9b16-e9abe82fea37)
+![Alt text](https://github.com/user-attachments/assets/33a7de73-7fa2-4984-9a1f-640b273d2e89)
+![Alt text](https://github.com/user-attachments/assets/22e07020-1149-4552-9286-b6701748599a)
 
 ---
 
@@ -110,9 +110,15 @@
 
 ## Ответ
 
-Выбран способ установки кластера K8s с помощью Kubespray. Количество машин и их конфигурацию можно выбрать в файлах настройки Terraform [main.tf]. Для установки в кластер Kubespray используется отдельная машина [runner.tf], которая после выполнения поставленных задач выключается.
+Выбран способ установки кластера K8s с помощью Kubespray. Герерируется динамический hosts.yaml файл с помощью шаблона и скрипта. Количество машин и их конфигурацию можно выбрать в файлах настройки Terraform [main.tf](https://github.com/wineperm/Diplom-yc/blob/main/main.tf). Для установки в кластер Kubespray используется отдельная машина [runner.tf](https://github.com/wineperm/Diplom-yc/blob/main/runner.tf), которая после выполнения поставленных задач выключается. 
 
-![Alt text]2
+[Kubespray](https://github.com/wineperm/kubespray)
+
+[generate_hosts.py](https://github.com/wineperm/Diplom-yc/blob/main/generate_hosts.py)
+
+![Alt text](https://github.com/user-attachments/assets/9822da65-f02a-40eb-b777-5890aa21b91d)
+
+![Alt text](https://github.com/user-attachments/assets/35eb69ea-2dc1-4780-9799-4b3f2c3d77a0)
 
 ---
 
@@ -133,20 +139,22 @@
 1. Git репозиторий с тестовым приложением и Dockerfile.
 2. Регистри с собранным docker image. В качестве регистри может быть DockerHub или [Yandex Container Registry](https://cloud.yandex.ru/services/container-registry), созданный также с помощью terraform.
 
-[https://github.com/wineperm/Diplom-yc/tree/main/APP] тестовое приложение.
+## Ответ
+
+[APP](https://github.com/wineperm/Diplom-yc/tree/main/APP) приложение с картинкой.
 
 - APP
   - html
-    - [KLS_netology_12.07.2004.jpeg]
-    - [index.html]
-  - [Dockerfile]
+    - [KLS_netology_12.07.2004.jpeg](https://github.com/wineperm/Diplom-yc/blob/main/APP/html/KLS_netology_12.07.2004.jpeg)
+    - [index.html](https://github.com/wineperm/Diplom-yc/blob/main/APP/html/index.html)
+  - [Dockerfile](https://github.com/wineperm/Diplom-yc/blob/main/APP/Dockerfile)
   - README.md
   - app.yaml
-  - [nginx.conf]
+  - [nginx.conf](https://github.com/wineperm/Diplom-yc/blob/main/APP/nginx.conf)
 
-[https://hub.docker.com/repository/docker/wineperm/my-nginx-app/general] репозиторий DockerHub
+[DockerHub](https://hub.docker.com/repository/docker/wineperm/my-nginx-app/general) репозиторий DockerHub с приложением.
 
-![Alt text]z3
+![Alt text](https://github.com/user-attachments/assets/ecb6ed66-1317-453c-946e-b9466edc0564)
 
 ---
 
@@ -177,10 +185,11 @@
 
 ## Ответ
 
-Установка мониторинга в кластер выбрана пакетом [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus). Пакет устанавливается в кластер с помощью GitHub Actions, используя workflows при поднятии и настройке инфраструктуры. Также и деплоится приложение с помощью GitHub Actions, используя workflows; образ берется с DockerHub.
+Установка мониторинга в кластер выбрана пакетом [kube-prometheus](https://github.com/wineperm/kube-prometheus). Пакет устанавливается в кластер с помощью GitHub Actions, используя workflows при создании и настройке инфраструктуры в облаке Yandex Cloud. Также происходит установка приложения с помощью GitHub Actions, используя workflows; образ берется с DockerHub. Доступ по http для сервиса Grafana и приложения есть.
 
-![Alt text]z4
-![Alt text]z4-1
+![Alt text](https://github.com/user-attachments/assets/678e80f0-3ac1-4484-9f3c-c8ede68b8d43)
+![Alt text](https://github.com/user-attachments/assets/4962a9e4-09e5-46b2-98c9-a0a8ba1842b5)
+
 
 ### Установка и настройка CI/CD
 
@@ -201,14 +210,18 @@
 
 ## Ответ
 
-![Alt text]z5
-![Alt text]z5-1
-![Alt text]z5-2
+При любом изменении в директории приложения [APP](https://github.com/wineperm/Diplom-yc/tree/main/APP) и коммите происходит сборка нового образа с фиксацией в теге хеша коммита и отправка его в репозиторий [Dockerhub](https://hub.docker.com/repository/docker/wineperm/my-nginx-app/general). При любом изменении в директории приложения [APP](https://github.com/wineperm/Diplom-yc/tree/main/APP) и коммите с тегом вида v1.0.0 происходит сборка с фиксацией тега, отправка в репозиторий [Dockerhub](https://hub.docker.com/repository/docker/wineperm/my-nginx-app/general) и установка новой версии в кластер k8s.
+
+![Alt text](https://github.com/user-attachments/assets/afde4683-262e-46d7-ad34-778a63264192)
+![Alt text](https://github.com/user-attachments/assets/a65b3546-60c1-4dc6-a637-f903ae635446)
+![Alt text](https://github.com/user-attachments/assets/7d6bd1b0-88e1-4b39-949d-417c2d754fa0)
+
+Тут должно быть подтверждение в виде скриншотов, что работает сборка по тегу вида v1.0.0, но закончились минуты на github, карты не принимает, локальный раннер не качает пакеты без vpn, санкции, а с нем не соединяется с удаленными хостами. Обнуление минут в сентябре.
 
 было до тега
-![Alt text]z4-1
+![Alt text]z5-3
 стало после тега
-![Alt text]z4-1
+![Alt text]z5-4
 
 ---
 
