@@ -55,18 +55,18 @@
 
 Общая концепция работы кода:
 
-При нажатии кнопки "run workflow" для [Terraform Apply.yml] или при коммите в GitHub Actions со словом "apply" на основе Terraform происходит создание инфраструктуры с заданным количеством и характеристиками виртуальных машин k8s-master-_ и k8s-worker-_. Машины распределяются по разным зонам доступности в зависимости от их количества. Далее на основе отдельной виртуальной машины Runner происходит установка и настройка кластера Kubernetes на основе пакета kubespray, установка пакета kube-prometheus и установка приложения со статической картинкой. Настройки можно менять в файле конфигурации приложения APP. После этого Runner выключается.
+При нажатии кнопки "run workflow" для [Terraform Apply.yml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Terraform%20Apply.yml) или при коммите в GitHub Actions со словом "apply" на основе Terraform происходит создание инфраструктуры с заданным количеством и характеристиками виртуальных машин k8s-master-_ и k8s-worker-_. Машины распределяются по разным зонам доступности в зависимости от их количества. Далее на основе отдельной виртуальной машины Runner происходит установка и настройка кластера Kubernetes на основе пакета kubespray, установка пакета kube-prometheus и установка приложения со статической картинкой. Настройки можно менять в файле конфигурации приложения APP. После этого Runner выключается.
 
 При внесении изменений в приложении APP и коммите происходит сборка нового Docker-образа с последующим сохранением в репозитории DockerHub с фиксацией в теге хеш коммита. [Build and Push Docker Image.yaml]
 
 При внесении изменений в приложении APP и коммите с тегом вида v1.0.0 происходит сборка нового Docker-образа с последующим сохранением в репозитории DockerHub с фиксацией в теге версии и установка с помощью создаваемой виртуальной машины Runner этой версии приложения в ранее созданный кластер Kubernetes. После этого Runner выключается. [Build, Push, and Deploy Docker Image.yaml]
 
-При нажатии кнопки "run workflow" для [Terraform Destroy.yml] или при коммите со словом "destroy" происходит полное удаление всех ресурсов, созданных ранее на Yandex Cloud в рамках этого проекта.
+При нажатии кнопки "run workflow" для [Terraform Destroy.yml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Terraform%20Destroy.yml) или при коммите со словом "destroy" происходит полное удаление всех ресурсов, созданных ранее на Yandex Cloud в рамках этого проекта.
 
-[Terraform Apply.yml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Terraform%20Apply.yml)
-[Build and Push Docker Image.yaml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Build%20and%20Push%20Docker%20Image.yaml)
-[Build, Push, and Deploy Docker Image.yaml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Build%2C%20Push%2C%20and%20Deploy%20Docker%20Image.yaml)
-[Terraform Destroy.yml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Terraform%20Destroy.yml)
+- [Terraform Apply.yml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Terraform%20Apply.yml)
+- [Build and Push Docker Image.yaml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Build%20and%20Push%20Docker%20Image.yaml)
+- [Build, Push, and Deploy Docker Image.yaml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Build%2C%20Push%2C%20and%20Deploy%20Docker%20Image.yaml)
+- [Terraform Destroy.yml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Terraform%20Destroy.yml)
 
 ---
 
@@ -212,11 +212,14 @@
 
 При любом изменении в директории приложения [APP](https://github.com/wineperm/Diplom-yc/tree/main/APP) и коммите происходит сборка нового образа с фиксацией в теге хеша коммита и отправка его в репозиторий [Dockerhub](https://hub.docker.com/repository/docker/wineperm/my-nginx-app/general). При любом изменении в директории приложения [APP](https://github.com/wineperm/Diplom-yc/tree/main/APP) и коммите с тегом вида v1.0.0 происходит сборка с фиксацией тега, отправка в репозиторий [Dockerhub](https://hub.docker.com/repository/docker/wineperm/my-nginx-app/general) и установка новой версии в кластер k8s.
 
+[Build and Push Docker Image.yaml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Build%20and%20Push%20Docker%20Image.yaml)
+[Build, Push, and Deploy Docker Image.yaml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Build%2C%20Push%2C%20and%20Deploy%20Docker%20Image.yaml)
+
 ![Alt text](https://github.com/user-attachments/assets/afde4683-262e-46d7-ad34-778a63264192)
 ![Alt text](https://github.com/user-attachments/assets/a65b3546-60c1-4dc6-a637-f903ae635446)
 ![Alt text](https://github.com/user-attachments/assets/7d6bd1b0-88e1-4b39-949d-417c2d754fa0)
 
-Тут должно быть подтверждение в виде скриншотов, что работает сборка по тегу вида v1.0.0, но закончились минуты на github, карты не принимает, локальный раннер не качает пакеты без vpn, санкции, а с нем не соединяется с удаленными хостами. Обнуление минут в сентябре.
+Тут должно быть подтверждение в виде скриншотов, что работает сборка по тегу вида v1.0.0, но закончились минуты на github, карты не принимает, локальный раннер не качает пакеты без vpn, санкции, а с ним не соединяется с удаленными хостами. Обнуление минут в сентябре.
 
 было до тега
 ![Alt text]z5-3
@@ -237,7 +240,7 @@
 
 ## Итог проделанной работы:
 
-Общая концепция работы данного кода заключается в автоматизации процесса развертывания инфраструктуры и приложений с использованием Terraform и GitHub Actions. Код включает несколько рабочих процессов (workflows), которые выполняют различные задачи, такие как применение Terraform-конфигураций, сборка и развертывание Docker-образов, а также управление Kubernetes-кластером.
+Общая работа данного кода заключается в автоматизации процесса развертывания инфраструктуры и приложений с использованием Terraform и GitHub Actions. Код включает несколько рабочих процессов (workflows), которые выполняют различные задачи, такие как применение Terraform-конфигураций, сборка и развертывание Docker-образов, а также управление Kubernetes-кластером.
 
 ### Основные компоненты и их функции:
 
