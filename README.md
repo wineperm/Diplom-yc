@@ -224,8 +224,12 @@
 ![Alt text](https://github.com/user-attachments/assets/a65b3546-60c1-4dc6-a637-f903ae635446)
 ![Alt text](https://github.com/user-attachments/assets/7d6bd1b0-88e1-4b39-949d-417c2d754fa0)
 
-Тут должно быть подтверждение в виде скриншотов, что работает сборка по тегу вида v1.0.0, но закончились минуты на github, карты не принимает, локальный раннер не качает пакеты без vpn, санкции, а с ним не соединяется с удаленными хостами. Обнуление минут в сентябре.
+Тут должно быть подтверждение в виде скриншотов, что работает сборка по тегу вида v1.0.0, но закончились минуты на github, карты не принимает, локальный раннер не качает пакеты без vpn, санкции, а с ним не соединяется с удаленными хостами. Обнуление минут в сентябре. Есть скриншот что код работает с кнопки, из кода [workflow](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Build%2C%20Push%2C%20and%20Deploy%20Docker%20Image.yaml), думаю, будет понятно что и с коммита с тегом будет работать.
 
+![Alt text](https://github.com/user-attachments/assets/de80b474-bf0f-4e7b-a9aa-ecae6da68966)
+![Alt text](https://github.com/user-attachments/assets/3b070aaa-ad85-4049-a759-4842cfbe5e8b)
+
+ДОДЕЛАТЬ
 было до тега
 ![Alt text]z5-3
 стало после тега
