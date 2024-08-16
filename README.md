@@ -142,6 +142,8 @@
 
 - [APP](https://github.com/wineperm/Diplom-yc/tree/main/APP) приложение с картинкой.
 
+---
+
 - APP
   - html
     - [KLS_netology_12.07.2004.jpeg](https://github.com/wineperm/Diplom-yc/blob/main/APP/html/KLS_netology_12.07.2004.jpeg)
@@ -150,6 +152,8 @@
   - README.md
   - app.yaml
   - [nginx.conf](https://github.com/wineperm/Diplom-yc/blob/main/APP/nginx.conf)
+
+---
 
 - [DockerHub](https://hub.docker.com/repository/docker/wineperm/my-nginx-app/general) репозиторий DockerHub с приложением.
 
