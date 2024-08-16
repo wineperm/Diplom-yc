@@ -74,13 +74,13 @@
 
 Инфраструктура создана с помощью Terraform, backend сделан в Terraform Cloud. Оркестрацию поднятия инфраструктуры с кнопки осуществляет GitHub Actions или при отправке коммита "apply", используя workflows. Машины распределяются в зависимости от заданного количества по разным зонам доступности.
 
-[main.tf](https://github.com/wineperm/Diplom-yc/blob/main/main.tf)
-[runner.tf](https://github.com/wineperm/Diplom-yc/blob/main/runner.tf)
-[vpc.tf](https://github.com/wineperm/Diplom-yc/blob/main/vpc.tf)
-[providers.tf](https://github.com/wineperm/Diplom-yc/blob/main/providers.tf)
-[variables.tf](https://github.com/wineperm/Diplom-yc/blob/main/variables.tf)
-[outputs.tf](https://github.com/wineperm/Diplom-yc/blob/main/outputs.tf)
-[backend.tf](https://github.com/wineperm/Diplom-yc/blob/main/backend.tf)
+- [main.tf](https://github.com/wineperm/Diplom-yc/blob/main/main.tf)
+- [runner.tf](https://github.com/wineperm/Diplom-yc/blob/main/runner.tf)
+- [vpc.tf](https://github.com/wineperm/Diplom-yc/blob/main/vpc.tf)
+- [providers.tf](https://github.com/wineperm/Diplom-yc/blob/main/providers.tf)
+- [variables.tf](https://github.com/wineperm/Diplom-yc/blob/main/variables.tf)
+- [outputs.tf](https://github.com/wineperm/Diplom-yc/blob/main/outputs.tf)
+- [backend.tf](https://github.com/wineperm/Diplom-yc/blob/main/backend.tf)
 
 ![Alt text](https://github.com/user-attachments/assets/db759888-bcb3-4171-9b16-e9abe82fea37)
 ![Alt text](https://github.com/user-attachments/assets/33a7de73-7fa2-4984-9a1f-640b273d2e89)
@@ -112,9 +112,8 @@
 
 Выбран способ установки кластера K8s с помощью Kubespray. Герерируется динамический hosts.yaml файл с помощью шаблона и скрипта. Количество машин и их конфигурацию можно выбрать в файлах настройки Terraform [main.tf](https://github.com/wineperm/Diplom-yc/blob/main/main.tf). Для установки в кластер Kubespray используется отдельная машина [runner.tf](https://github.com/wineperm/Diplom-yc/blob/main/runner.tf), которая после выполнения поставленных задач выключается. 
 
-[Kubespray](https://github.com/wineperm/kubespray)
-
-[generate_hosts.py](https://github.com/wineperm/Diplom-yc/blob/main/generate_hosts.py)
+- [Kubespray](https://github.com/wineperm/kubespray)
+- [generate_hosts.py](https://github.com/wineperm/Diplom-yc/blob/main/generate_hosts.py)
 
 ![Alt text](https://github.com/user-attachments/assets/9822da65-f02a-40eb-b777-5890aa21b91d)
 
@@ -141,7 +140,7 @@
 
 ## Ответ
 
-[APP](https://github.com/wineperm/Diplom-yc/tree/main/APP) приложение с картинкой.
+- [APP](https://github.com/wineperm/Diplom-yc/tree/main/APP) приложение с картинкой.
 
 - APP
   - html
@@ -152,7 +151,7 @@
   - app.yaml
   - [nginx.conf](https://github.com/wineperm/Diplom-yc/blob/main/APP/nginx.conf)
 
-[DockerHub](https://hub.docker.com/repository/docker/wineperm/my-nginx-app/general) репозиторий DockerHub с приложением.
+- [DockerHub](https://hub.docker.com/repository/docker/wineperm/my-nginx-app/general) репозиторий DockerHub с приложением.
 
 ![Alt text](https://github.com/user-attachments/assets/ecb6ed66-1317-453c-946e-b9466edc0564)
 
@@ -185,8 +184,10 @@
 
 ## Ответ
 
-Установка мониторинга в кластер выбрана пакетом [kube-prometheus](https://github.com/wineperm/kube-prometheus). Пакет устанавливается в кластер с помощью GitHub Actions, используя workflows при создании и настройке инфраструктуры в облаке Yandex Cloud. Также происходит установка приложения с помощью GitHub Actions, используя workflows; образ берется с DockerHub. Доступ по http для сервиса Grafana и приложения есть.
+Установка мониторинга в кластер выбрана пакетом [kube-prometheus](https://github.com/wineperm/kube-prometheus). Пакет устанавливается в кластер с помощью GitHub Actions, используя workflows при создании и настройке инфраструктуры в облаке Yandex Cloud. Также происходит установка приложения с помощью GitHub Actions, используя workflows; образ берется с [DockerHub](https://hub.docker.com/repository/docker/wineperm/my-nginx-app/general). Доступ по http для сервиса Grafana и приложения есть.
 
+- [kube-prometheus](https://github.com/wineperm/kube-prometheus)
+ 
 ![Alt text](https://github.com/user-attachments/assets/678e80f0-3ac1-4484-9f3c-c8ede68b8d43)
 ![Alt text](https://github.com/user-attachments/assets/4962a9e4-09e5-46b2-98c9-a0a8ba1842b5)
 
@@ -212,8 +213,8 @@
 
 При любом изменении в директории приложения [APP](https://github.com/wineperm/Diplom-yc/tree/main/APP) и коммите происходит сборка нового образа с фиксацией в теге хеша коммита и отправка его в репозиторий [Dockerhub](https://hub.docker.com/repository/docker/wineperm/my-nginx-app/general). При любом изменении в директории приложения [APP](https://github.com/wineperm/Diplom-yc/tree/main/APP) и коммите с тегом вида v1.0.0 происходит сборка с фиксацией тега, отправка в репозиторий [Dockerhub](https://hub.docker.com/repository/docker/wineperm/my-nginx-app/general) и установка новой версии в кластер k8s.
 
-[Build and Push Docker Image.yaml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Build%20and%20Push%20Docker%20Image.yaml)
-[Build, Push, and Deploy Docker Image.yaml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Build%2C%20Push%2C%20and%20Deploy%20Docker%20Image.yaml)
+- [Build and Push Docker Image.yaml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Build%20and%20Push%20Docker%20Image.yaml)
+- [Build, Push, and Deploy Docker Image.yaml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Build%2C%20Push%2C%20and%20Deploy%20Docker%20Image.yaml)
 
 ![Alt text](https://github.com/user-attachments/assets/afde4683-262e-46d7-ad34-778a63264192)
 ![Alt text](https://github.com/user-attachments/assets/a65b3546-60c1-4dc6-a637-f903ae635446)
