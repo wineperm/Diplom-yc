@@ -57,9 +57,9 @@
 
 При нажатии кнопки "run workflow" для [Terraform Apply.yml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Terraform%20Apply.yml) или при коммите в GitHub Actions со словом "apply" на основе Terraform происходит создание инфраструктуры с заданным количеством и характеристиками виртуальных машин k8s-master-_ и k8s-worker-_. Машины распределяются по разным зонам доступности в зависимости от их количества. Далее на основе отдельной виртуальной машины Runner происходит установка и настройка кластера Kubernetes на основе пакета kubespray, установка пакета kube-prometheus и установка приложения со статической картинкой. Настройки можно менять в файле конфигурации приложения APP. После этого Runner выключается.
 
-При внесении изменений в приложении APP и коммите происходит сборка нового Docker-образа с последующим сохранением в репозитории [DockerHub](https://hub.docker.com/repository/docker/wineperm/my-nginx-app/general) с фиксацией в теге хеш коммита. [Build and Push Docker Image.yaml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Build%20and%20Push%20Docker%20Image.yaml)
+При внесении изменений в приложении APP и коммите происходит сборка нового Docker-образа с последующим сохранением в репозитории [DockerHub](https://hub.docker.com/r/wineperm/my-nginx-app/tags) с фиксацией в теге хеш коммита. [Build and Push Docker Image.yaml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Build%20and%20Push%20Docker%20Image.yaml)
 
-При внесении изменений в приложении APP и коммите с тегом вида v1.0.0 происходит сборка нового Docker-образа с последующим сохранением в репозитории [DockerHub](https://hub.docker.com/repository/docker/wineperm/my-nginx-app/general) с фиксацией в теге версии и установка с помощью создаваемой виртуальной машины Runner этой версии приложения в ранее созданный кластер Kubernetes. После этого Runner выключается. [Build, Push, and Deploy Docker Image.yaml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Build%2C%20Push%2C%20and%20Deploy%20Docker%20Image.yaml)
+При внесении изменений в приложении APP и коммите с тегом вида v1.0.0 происходит сборка нового Docker-образа с последующим сохранением в репозитории [DockerHub](https://hub.docker.com/r/wineperm/my-nginx-app/tags) с фиксацией в теге версии и установка с помощью создаваемой виртуальной машины Runner этой версии приложения в ранее созданный кластер Kubernetes. После этого Runner выключается. [Build, Push, and Deploy Docker Image.yaml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Build%2C%20Push%2C%20and%20Deploy%20Docker%20Image.yaml)
 
 При нажатии кнопки "run workflow" для [Terraform Destroy.yml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Terraform%20Destroy.yml) или при коммите со словом "destroy" происходит полное удаление всех ресурсов, созданных ранее на Yandex Cloud в рамках этого проекта.
 
@@ -155,7 +155,7 @@
 
 ---
 
-- [DockerHub](https://hub.docker.com/repository/docker/wineperm/my-nginx-app/general) репозиторий DockerHub с приложением.
+- [DockerHub](https://hub.docker.com/r/wineperm/my-nginx-app/tags) репозиторий DockerHub с приложением.
 
 ![Alt text](https://github.com/user-attachments/assets/ecb6ed66-1317-453c-946e-b9466edc0564)
 
@@ -188,7 +188,7 @@
 
 ## Ответ
 
-Установка мониторинга в кластер выбрана пакетом [kube-prometheus](https://github.com/wineperm/kube-prometheus). Пакет устанавливается в кластер с помощью GitHub Actions, используя workflows при создании и настройке инфраструктуры в облаке Yandex Cloud. Также происходит установка приложения с помощью GitHub Actions, используя workflows; образ берется с [DockerHub](https://hub.docker.com/repository/docker/wineperm/my-nginx-app/general). Доступ по http для сервиса Grafana и приложения есть.
+Установка мониторинга в кластер выбрана пакетом [kube-prometheus](https://github.com/wineperm/kube-prometheus). Пакет устанавливается в кластер с помощью GitHub Actions, используя workflows при создании и настройке инфраструктуры в облаке Yandex Cloud. Также происходит установка приложения с помощью GitHub Actions, используя workflows; образ берется с [DockerHub](https://hub.docker.com/r/wineperm/my-nginx-app/tags). Доступ по http для сервиса Grafana и приложения есть.
 
 - [kube-prometheus](https://github.com/wineperm/kube-prometheus)
  
@@ -215,7 +215,7 @@
 
 ## Ответ
 
-При любом изменении в директории приложения [APP](https://github.com/wineperm/Diplom-yc/tree/main/APP) и коммите происходит сборка нового образа с фиксацией в теге хеша коммита и отправка его в репозиторий [Dockerhub](https://hub.docker.com/repository/docker/wineperm/my-nginx-app/general). При любом изменении в директории приложения [APP](https://github.com/wineperm/Diplom-yc/tree/main/APP) и коммите с тегом вида v1.0.0 происходит сборка с фиксацией тега, отправка в репозиторий [Dockerhub](https://hub.docker.com/repository/docker/wineperm/my-nginx-app/general) и установка новой версии в кластер k8s.
+При любом изменении в директории приложения [APP](https://github.com/wineperm/Diplom-yc/tree/main/APP) и коммите происходит сборка нового образа с фиксацией в теге хеша коммита и отправка его в репозиторий [Dockerhub](https://hub.docker.com/r/wineperm/my-nginx-app/tags). При любом изменении в директории приложения [APP](https://github.com/wineperm/Diplom-yc/tree/main/APP) и коммите с тегом вида v1.0.0 происходит сборка с фиксацией тега, отправка в репозиторий [Dockerhub](https://hub.docker.com/r/wineperm/my-nginx-app/tags) и установка новой версии в кластер k8s.
 
 - [Build and Push Docker Image.yaml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Build%20and%20Push%20Docker%20Image.yaml)
 - [Build, Push, and Deploy Docker Image.yaml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Build%2C%20Push%2C%20and%20Deploy%20Docker%20Image.yaml)
