@@ -142,7 +142,7 @@ jobs:
         run: |
           MASTER_IP=$(terraform output -json master_external_ips | jq -r '.[0]')
           RUNNER_IP=$(terraform output -json runner_external_ip | jq -r '.')
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$RUNNER_IP "ssh -o StrictHostKeyChecking=no ubuntu@$MASTER_IP 'kubectl apply -f ~/app.yaml'"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$RUNNER_IP "ssh -o StrictHostKeyChecking=no ubuntu@$MASTER_IP 'kubectl set image deployment/my-nginx-app my-nginx-app=wineperm/my-nginx-app:latest --namespace=application && kubectl rollout restart deployment/my-nginx-app --namespace=application'"
 
       - name: Destroy runner VM
         if: success()
