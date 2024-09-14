@@ -110,7 +110,7 @@
 
 ## Ответ
 
-Выбран способ установки кластера K8s с помощью Kubespray. Генерируется динамический hosts.yaml файл с помощью шаблона и скрипта. Количество машин и их конфигурацию можно выбрать в файлах настройки Terraform [main.tf](https://github.com/wineperm/Diplom-yc/blob/main/main.tf). Для установки в кластер Kubespray используется отдельная машина [runner.tf](https://github.com/wineperm/Diplom-yc/blob/main/runner.tf), которая после выполнения поставленных задач выключается. 
+Выбран способ установки кластера K8s с помощью Kubespray. Генерируется динамический hosts.yaml файл с помощью шаблона и скрипта. Количество машин и их конфигурацию можно выбрать в файлах настройки Terraform [main.tf](https://github.com/wineperm/Diplom-yc/blob/main/main.tf). Для установки в кластер Kubespray используется отдельная машина [runner.tf](https://github.com/wineperm/Diplom-yc/blob/main/runner.tf), которая после выполнения поставленных задач выключается.
 
 - [Kubespray](https://github.com/wineperm/kubespray)
 - [generate_hosts.py](https://github.com/wineperm/Diplom-yc/blob/main/generate_hosts.py)
@@ -191,10 +191,9 @@
 Установка мониторинга в кластер выбрана пакетом [kube-prometheus](https://github.com/wineperm/kube-prometheus). Пакет устанавливается в кластер с помощью GitHub Actions, используя workflows при создании и настройке инфраструктуры в облаке Yandex Cloud. Также происходит установка приложения с помощью GitHub Actions, используя workflows; образ берется с [DockerHub](https://hub.docker.com/r/wineperm/my-nginx-app/tags). Доступ по http для сервиса Grafana и приложения есть.
 
 - [kube-prometheus](https://github.com/wineperm/kube-prometheus)
- 
+
 ![Alt text](https://github.com/user-attachments/assets/678e80f0-3ac1-4484-9f3c-c8ede68b8d43)
 ![Alt text](https://github.com/user-attachments/assets/4962a9e4-09e5-46b2-98c9-a0a8ba1842b5)
-
 
 ### Установка и настройка CI/CD
 
@@ -218,22 +217,19 @@
 При любом изменении в директории приложения [APP](https://github.com/wineperm/Diplom-yc/tree/main/APP) и коммите происходит сборка нового образа с фиксацией в теге хеша коммита и отправка его в репозиторий [Dockerhub](https://hub.docker.com/r/wineperm/my-nginx-app/tags). При любом изменении в директории приложения [APP](https://github.com/wineperm/Diplom-yc/tree/main/APP) и коммите с тегом вида v1.0.0 происходит сборка с фиксацией тега, отправка в репозиторий [Dockerhub](https://hub.docker.com/r/wineperm/my-nginx-app/tags) и установка новой версии в кластер k8s.
 
 - [Build and Push Docker Image.yaml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Build%20and%20Push%20Docker%20Image.yaml)
-- [Build, Push, and Deploy Docker Image.yaml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Build%2C%20Push%2C%20and%20Deploy%20Docker%20Image.yaml)
 
 ![Alt text](https://github.com/user-attachments/assets/afde4683-262e-46d7-ad34-778a63264192)
 ![Alt text](https://github.com/user-attachments/assets/a65b3546-60c1-4dc6-a637-f903ae635446)
 ![Alt text](https://github.com/user-attachments/assets/7d6bd1b0-88e1-4b39-949d-417c2d754fa0)
 
-Тут должно быть подтверждение в виде скриншотов, что работает сборка по тегу вида v1.0.0, но закончились минуты на github, карты не принимает, локальный раннер не качает пакеты без vpn, санкции, а с ним не соединяется с удаленными хостами. Обнуление минут в сентябре. Есть скриншот что код работает с кнопки, из кода [workflow](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Build%2C%20Push%2C%20and%20Deploy%20Docker%20Image.yaml), думаю, будет понятно что и с коммита с тегом будет работать.
+- [Build, Push, and Deploy Docker Image.yaml](https://github.com/wineperm/Diplom-yc/blob/main/.github/workflows/Build%2C%20Push%2C%20and%20Deploy%20Docker%20Image.yaml)
 
-![Alt text](https://github.com/user-attachments/assets/de80b474-bf0f-4e7b-a9aa-ecae6da68966)
-![Alt text](https://github.com/user-attachments/assets/3b070aaa-ad85-4049-a759-4842cfbe5e8b)
-
-ДОДЕЛАТЬ
-было до тега
-![Alt text]z5-3
-стало после тега
-![Alt text]z5-4
+![Alt text](https://github.com/user-attachments/assets/3313a6fd-2fc1-4b3d-b2bc-46b3c46ab055)
+![Alt text](https://github.com/user-attachments/assets/005d0af4-b4c8-4f7c-aef8-ab16156d0fef)
+![Alt text](https://github.com/user-attachments/assets/8f6db079-64f1-4c46-88a9-73806ff305ee)
+![Alt text](https://github.com/user-attachments/assets/c3ce58c0-c37e-486c-b8ac-eea8d5496c52)
+![Alt text](https://github.com/user-attachments/assets/a7417487-3694-4abc-bcff-ab6c77cc2bfd)
+![Alt text](https://github.com/user-attachments/assets/27f578fa-2546-41ff-b130-97348f904a72)
 
 ---
 
