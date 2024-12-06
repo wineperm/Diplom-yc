@@ -1,4 +1,4 @@
-name: YC_Terraform_WM_Destroy
+name: YC_Terraform_ReCreate_WM
 
 on:
   workflow_dispatch:
