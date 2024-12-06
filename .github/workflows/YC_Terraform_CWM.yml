@@ -55,7 +55,7 @@ jobs:
           TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
           TF_VAR_service_account_key_file_path: ~/.ssh/authorized_key.json
           TF_VAR_ssh_private_key_path: ~/.ssh/id_ed25519
-        run: terraform apply -auto-approve
+        run: terraform apply -auto-approve main.tf
 
       - name: Generate terraform_output.json
         run: terraform output -json > terraform_output.json
