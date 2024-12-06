@@ -1,4 +1,4 @@
-name: YC_Terraform_WM_Apply
+name: YC_Terraform_Create_WM
 
 on:
   workflow_dispatch:
