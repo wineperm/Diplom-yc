@@ -47,7 +47,8 @@ jobs:
           TF_VAR_ssh_private_key_path: ~/.ssh/id_ed25519
         run: terraform init
 
-      - name: Force Unlock Terraform State
+      - name: Check for Terraform State Lock
+        id: check_lock
         env:
           TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
           TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
@@ -56,10 +57,22 @@ jobs:
           TF_VAR_service_account_key_file_path: ~/.ssh/authorized_key.json
           TF_VAR_ssh_private_key_path: ~/.ssh/id_ed25519
         run: |
-          LOCK_ID=$(terraform force-unlock -list | grep -oP '(?<=ID: )[a-f0-9-]+')
-          if [ -n "$LOCK_ID" ]; then
-            terraform force-unlock $LOCK_ID
+          LOCK_INFO=$(terraform force-unlock -list 2>&1)
+          if echo "$LOCK_INFO" | grep -q "ID:"; then
+            LOCK_ID=$(echo "$LOCK_INFO" | grep -oP '(?<=ID: )[a-f0-9-]+')
+            echo "LOCK_ID=$LOCK_ID" >> $GITHUB_ENV
           fi
+
+      - name: Force Unlock Terraform State
+        if: env.LOCK_ID
+        env:
+          TF_VAR_yc_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+          TF_VAR_yc_folder_id: ${{ secrets.YC_FOLDER_ID }}
+          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+          TF_VAR_yc_service_account_id: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+          TF_VAR_service_account_key_file_path: ~/.ssh/authorized_key.json
+          TF_VAR_ssh_private_key_path: ~/.ssh/id_ed25519
+        run: terraform force-unlock ${{ env.LOCK_ID }}
 
       - name: Destroy Terraform
         env:
