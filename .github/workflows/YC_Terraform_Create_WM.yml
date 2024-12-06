@@ -62,7 +62,16 @@ jobs:
 
       - name: Output IP addresses of hosts
         run: |
-          echo "Master IPs:"
-          terraform output -json master_external_ips | jq -r '.[]'
-          echo "Runner IP:"
-          terraform output -json runner_external_ip | jq -r '.'
+          if terraform output -json master_external_ips | jq -e '. != null'; then
+            echo "Master IPs:"
+            terraform output -json master_external_ips | jq -r '.[]'
+          else
+            echo "No master IPs found."
+          fi
+
+          if terraform output -json runner_external_ip | jq -e '. != null'; then
+            echo "Runner IP:"
+            terraform output -json runner_external_ip | jq -r '.'
+          else
+            echo "No runner IP found."
+          fi
